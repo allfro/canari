@@ -73,7 +73,7 @@ prerequisite modules.
 Installing Canari is a cinch. Just run:
 
 ```bash
-$ sudo python setup.py install
+$ sudo easy_install canari
 ```
 
 This will install all the necessary modules and download any dependencies (other than what's required above)

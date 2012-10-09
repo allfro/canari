@@ -25,7 +25,7 @@ if name == 'nt':
 setup(
     name='canari',
     author='Nadeem Douba',
-    version='1.0',
+    version='0.1',
     author_email='ndouba@gmail.com',
     description='Rapid transform development and transform execution framework for Maltego.',
     license='GPL',
