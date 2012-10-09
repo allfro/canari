@@ -5,7 +5,7 @@ from re import findall, search, sub
 from urllib import urlopen
 
 __author__ = 'Nadeem Douba'
-__copyright__ = 'Copyright 2012, Sploitego Project'
+__copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'

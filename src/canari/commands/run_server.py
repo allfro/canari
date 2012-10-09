@@ -18,7 +18,7 @@ from re import sub
 
 
 __author__ = 'Nadeem Douba'
-__copyright__ = 'Copyright 2012, Sploitego Project'
+__copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
@@ -120,7 +120,7 @@ def croak(error_msg, r):
 class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
 
     protocol_version = 'HTTP/1.1'
-    server_version = 'Sploitego/1.0'
+    server_version = 'Canari/1.0'
     count = 0
 
 
@@ -198,7 +198,7 @@ class SecureMaltegoHTTPServer(HTTPServer):
         HTTPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=bind_and_activate)
         self.socket = wrap_socket(self.socket, server_side=True, certfile=cert, cert_reqs=CERT_NONE)
         self.transforms = transforms
-        self.server_name = 'Sploitego'
+        self.server_name = 'Canari'
 
 
 class MaltegoHTTPServer(HTTPServer):

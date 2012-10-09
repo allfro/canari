@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 __author__ = 'Nadeem Douba'
-__copyright__ = 'Copyright 2012, Sploitego Project'
+__copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = ['Nadeem Douba']
 
 __license__ = 'GPL'

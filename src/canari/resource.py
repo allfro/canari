@@ -4,7 +4,7 @@ from pkg_resources import resource_filename
 
 
 __author__ = 'Nadeem Douba'
-__copyright__ = 'Copyright 2012, Sploitego Project'
+__copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
