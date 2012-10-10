@@ -10,7 +10,7 @@ if name == 'nt':
     from win32file import _get_osfhandle, LockFileEx, UnlockFileEx
     from pywintypes import OVERLAPPED, error as WinIOError
 else:
-    from fcntl import LOCK_EX, LOCK_NB, LOCK_UN, flock
+    from fcntl import flock, LOCK_EX, LOCK_NB, LOCK_SH, LOCK_UN
 
 
 __author__ = 'Nadeem Douba'
