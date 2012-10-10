@@ -9,7 +9,7 @@ __credits__ = []
 __license__ = 'GPL'
 __version__ = '0.1'
 __maintainer__ = '${author}'
-__email__ = 'whereim@inthe.net'
+__email__ = '${email}'
 __status__ = 'Development'
 
 __all__ = [

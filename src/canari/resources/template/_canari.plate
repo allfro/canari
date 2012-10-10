@@ -1,0 +1,6 @@
+[metadata]
+
+author = ${author}
+project = ${project}
+maintainer = ${maintainer}
+email = ${email}
