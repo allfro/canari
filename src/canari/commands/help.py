@@ -27,6 +27,8 @@ parser.add_argument(
     'command',
     metavar='<command>',
     choices=cmds,
+    default='help',
+    nargs='?',
     help='The canari command you want help for (%s)' % ', '.join(cmds)
 )
 

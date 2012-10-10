@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 
-from os import path, listdir, sep, environ, mkdir, pathsep
+from canari.config import CanariConfigParser
+
+from os import path, listdir, sep, environ, mkdir, pathsep, getcwd
 from pkg_resources import resource_filename
 from sys import path as pypath, platform
+from datetime import datetime
 from string import Template
+
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
@@ -144,3 +148,33 @@ def console_message(msg, tab=-1):
             console_message(sc, tab)
             tab -= 1
     tab -= 1
+
+
+def init_pkg():
+
+    conf = '.canari'
+
+    for i in range(0, 5):
+        if path.exists(conf):
+            c = CanariConfigParser()
+            c.read(conf)
+            return {
+                'author' : c['metadata/author'],
+                'email' : c['metadata/email'],
+                'maintainer' : c['metadata/maintainer'],
+                'project' : c['metadata/project'],
+                'year' : datetime.now().year,
+                'dir' : getcwd()
+            }
+        conf = '..%s%s' % (sep, conf)
+
+    return {
+        'author' : '',
+        'email' : '',
+        'maintainer' : '',
+        'project' : '',
+        'year' : datetime.now().year
+    }
+
+
+

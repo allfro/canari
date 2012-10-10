@@ -3,6 +3,7 @@
 from common import read_template, write_template, generate_all, build_skeleton, cmd_name
 
 from argparse import ArgumentParser
+from datetime import datetime
 from getpass import getuser
 from os import path, sep
 
@@ -31,6 +32,7 @@ parser.add_argument(
 
 
 def write_setup(package_name, values):
+    write_template(sep.join([package_name, '.canari']), read_template('_canari', values))
     write_template(sep.join([package_name, 'setup.py']), read_template('setup', values))
     write_template(sep.join([package_name, 'README.md']), read_template('README', values))
 
@@ -65,15 +67,22 @@ def write_resources(package_name, resources, init, values):
 
 
 def write_common(transforms, init, values):
-    write_template(
-        sep.join([transforms, '__init__.py']),
-        init + generate_all('common', 'helloworld')
-    )
 
-    write_template(
-        sep.join([transforms, 'helloworld.py']),
-        read_template('transform', values)
-    )
+    if values['example']:
+        write_template(
+            sep.join([transforms, '__init__.py']),
+            init + generate_all('common', 'helloworld')
+        )
+
+        write_template(
+            sep.join([transforms, 'helloworld.py']),
+            read_template('transform', values)
+        )
+    else:
+        write_template(
+            sep.join([transforms, '__init__.py']),
+            init + generate_all('common')
+        )
 
     write_template(
         sep.join([transforms, 'common', '__init__.py']),
@@ -94,6 +103,33 @@ def description():
     return parser.description
 
 
+def parse_bool(ans, default='y'):
+
+    while True:
+        ans = raw_input(ans).lower() or default
+        if ans.startswith('y'):
+            return True
+        elif ans.startswith('n'):
+            return False
+
+
+def ask_user(defaults):
+
+    print('Welcome to the Canari transform package wizard.')
+
+    if not parse_bool('Would you like to specify authorship information? [Y/n]: '):
+        return
+
+    defaults['description'] = raw_input('Project description [%s]: ' % defaults['description']) or defaults['description']
+    defaults['example'] = parse_bool('Generate an example transform? [Y/n]: ')
+    defaults['author'] = raw_input('Author name [%s]: ' % defaults['author']) or defaults['author']
+    defaults['email'] = raw_input('Author email []: ') or ''
+    defaults['maintainer'] = raw_input('Maintainer name [%s]: ' % defaults['author']) or defaults['author']
+
+    if not parse_bool('Are you satisfied with this information? [Y/n]: '):
+        return ask_user(defaults)
+
+
 def run(args):
 
     opts = parser.parse_args(args)
@@ -105,11 +141,17 @@ def run(args):
         'package' : package_name,
         'entity' : 'My%sEntity' % capitalized_package_name,
         'base_entity' : '%sEntity' % capitalized_package_name,
-        'author' : getuser(),
-        'year' : 2012,
         'project' : capitalized_package_name,
-        'namespace' : package_name
+        'author' : getuser(),
+        'year' : datetime.now().year,
+        'namespace' : package_name,
+        'email' : '',
+        'maintainer' : getuser(),
+        'example' : True,
+        'description' : ''
     }
+
+    ask_user(values)
 
     base = sep.join([package_name, 'src', package_name])
     transforms = sep.join([base, 'transforms'])

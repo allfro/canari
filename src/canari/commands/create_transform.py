@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from common import write_template, read_template, cmd_name
+from common import write_template, read_template, cmd_name, init_pkg
+
 
 from argparse import ArgumentParser
 from os import path, sep, getcwd
-from getpass import getuser
 from re import sub
 
 
@@ -68,10 +68,7 @@ def run(args):
         print ('Transform %s already exists... quitting' % repr(transformf))
         exit(-1)
 
-    values = {
-        'author' : getuser(),
-        'year' : 2012
-    }
+    values = init_pkg()
 
     write_template(
         transformf,

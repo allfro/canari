@@ -20,7 +20,8 @@ cmds = get_commands()
 
 def parse_args():
     parser = ArgumentParser(
-        description='Centralized Canari Management System'
+        description='Centralized Canari Management System',
+        add_help=False
     )
     parser.add_argument(
         'command',
