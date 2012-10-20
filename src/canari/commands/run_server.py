@@ -6,13 +6,15 @@ from common import cmd_name, import_transform, fix_binpath, fix_pypath
 from ..config import config
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+from os import execvp, geteuid, name, path, fork
 from xml.etree.cElementTree import fromstring
-from os import execvp, geteuid, name, path
 from SocketServer import ThreadingMixIn
 from ssl import wrap_socket, CERT_NONE
 from argparse import ArgumentParser
 from cStringIO import StringIO
+from socket import gethostname
 from urlparse import urlsplit
+from hashlib import md5
 from sys import argv
 from re import sub
 
@@ -76,6 +78,20 @@ parser.add_argument(
     help='The name of the certificate file used for the server in PEM format.'
 )
 
+parser.add_argument(
+    '--hostname',
+    metavar='[hostname]',
+    default=gethostname(),
+    help='The hostname of this transform server.'
+)
+
+parser.add_argument(
+    '--daemon',
+    default=False,
+    action='store_true',
+    help='Daemonize server (fork to background).'
+)
+
 
 def help():
     parser.print_help()
@@ -94,7 +110,15 @@ def message(m, r):
     r.end_headers()
 
     sio = StringIO()
-    m.entities
+    for e in m.entities:
+        if e.iconurl is not None:
+            e.iconurl = e.iconurl.strip()
+            if e.iconurl.startswith('file://'):
+                new_url = '/%s' % md5(e.iconurl).hexdigest()
+                if new_url not in r.server.resources:
+                    r.server.resources[new_url] = e.iconurl[7:]
+                e.iconurl = new_url
+
     Message(MaltegoMessage(m)).write(sio)
     v = sio.getvalue()
     # Get rid of those nasty unicode 32 characters
@@ -182,31 +206,49 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
             self.dotransform(self.server.transforms[path])
 
     def do_GET(self):
-        self.count += 1
-        print self.count
         path = urlsplit(self.path or '/').path
         if path in self.server.transforms:
             self.send_error(200, 'Yes')
             return
+        elif path in self.server.resources:
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/octet-stream')
+            self.send_header('Connection', 'close')
+            self.end_headers()
+            self.wfile.write(file(self.server.resources[path]).read())
+            return
+
         self.send_error(404, 'No')
-
-
-class SecureMaltegoHTTPServer(HTTPServer):
-
-    def __init__(self, server_address=('', 8080), RequestHandlerClass=MaltegoTransformRequestHandler,
-                 bind_and_activate=True, transforms={}, cert='cert.pem'):
-        HTTPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate=bind_and_activate)
-        self.socket = wrap_socket(self.socket, server_side=True, certfile=cert, cert_reqs=CERT_NONE)
-        self.transforms = transforms
-        self.server_name = 'Canari'
 
 
 class MaltegoHTTPServer(HTTPServer):
 
+    server_name = 'Canari'
+    resources = {}
+    is_ssl = False
+
     def __init__(self, server_address=('', 8080), RequestHandlerClass=MaltegoTransformRequestHandler,
-                 bind_and_activate=True, transforms={}):
+                 bind_and_activate=True, transforms={}, hostname=gethostname()):
         HTTPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate)
         self.transforms = transforms
+        self.hostname = hostname
+
+
+class SecureMaltegoHTTPServer(MaltegoHTTPServer):
+
+    is_ssl = True
+
+    def __init__(self, server_address=('', 8080), RequestHandlerClass=MaltegoTransformRequestHandler,
+                 bind_and_activate=True, transforms={}, cert='cert.pem', hostname=gethostname()):
+        MaltegoHTTPServer.__init__(
+            self,
+            server_address,
+            RequestHandlerClass,
+            bind_and_activate=bind_and_activate,
+            transforms=transforms,
+            hostname=hostname
+        )
+        self.socket = wrap_socket(self.socket, server_side=True, certfile=cert, cert_reqs=CERT_NONE)
 
 
 class AsyncSecureMaltegoHTTPServer(ThreadingMixIn, SecureMaltegoHTTPServer):
@@ -287,12 +329,15 @@ def run(args):
             print ('The certificate file %s does not exist. Please create a PEM file...' % repr(opts.cert))
             exit(-1)
         print ('Making it secure (1337)...')
-        httpd = AsyncSecureMaltegoHTTPServer(server_address=server_address, transforms=transforms, cert=opts.cert)
+        httpd = AsyncSecureMaltegoHTTPServer(server_address=server_address,
+            transforms=transforms, cert=opts.cert, hostname=opts.hostname)
     else:
         print ('Really? Over regular HTTP? What a shame...')
-        httpd = AsyncMaltegoHTTPServer(server_address=server_address, transforms=transforms)
+        httpd = AsyncMaltegoHTTPServer(server_address=server_address, transforms=transforms, hostname=opts.hostname)
 
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        httpd.server_close()
+    if not opts.daemon or not fork():
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            httpd.server_close()
+    exit(0)
