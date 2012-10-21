@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-from common import console_message, cmd_name, highlight, fix_pypath, fix_binpath
+from common import console_message, cmd_name, highlight, fix_pypath, fix_binpath, import_package
 from ..maltego.message import MaltegoTransformResponseMessage
 from ..config import config
 
+from distutils.sysconfig import get_config_var
+from os import path, name, geteuid, execvp
 from code import InteractiveConsole
 from argparse import ArgumentParser
-from os import path, environ
 from atexit import register
-from re import sub, match
+from sys import argv
 import readline
 
 
@@ -43,37 +44,41 @@ def description():
     return parser.description
 
 
-class MtgConsole(InteractiveConsole):
+class ShellCommand(object):
 
-    def __init__(self, package):
-        m = __import__(package, globals(), locals(), ['*'])
-        m.__dict__[MaltegoTransformResponseMessage.__name__] = MaltegoTransformResponseMessage
-        m.__dict__['message'] = console_message
-        InteractiveConsole.__init__(self, locals=m.__dict__)
-        self.init_history(path.expanduser('~/.mtgsh_history'))
+    def __init__(self, mod):
+        self.mod = mod
+        self.sudoargs = ['sudo'] + list(argv)
 
-    def raw_input(self, prompt):
-        line = InteractiveConsole.raw_input(self, prompt=highlight('mtg> ', None, True))
-        r = match(r'([^(]+)\((.*?)\)', line)
-        if r is not None:
-            g = r.groups()
-            if g[0] in self.locals:
-                line = eval(sub(r'([^\(]+)\((.*)\)', r'self.docall("\1", \2)', line))
-        return line
-
-    def docall(self, *args, **kwargs):
-        return """message(%s.dotransform(
+    def __call__(self, value, *args, **kwargs):
+        if name == 'posix' and hasattr(self.mod.dotransform, 'privileged') and geteuid():
+            print highlight("Need to be root to run this transform... sudo'ing...", 'green', True)
+            execvp('sudo', self.sudoargs)
+            return
+        return console_message(self.mod.dotransform(
             type(
                 'MaltegoTransformRequestMessage',
                 (object,),
-                {
-                    'value' : %s,
-                    'fields' : %s,
-                    'params' : %s
+                    {
+                    'value' : value,
+                    'params' : list(args),
+                    'fields' : kwargs
                 }
             )(),
             MaltegoTransformResponseMessage()
-        ))""" % (args[0], repr(args[1]) if len(args) != 1 else repr(''), repr(kwargs), repr(args[2:]))
+        ))
+
+
+class MtgConsole(InteractiveConsole):
+
+    def __init__(self, package):
+        package = import_package(package)
+        transforms = dict(dir=dir)
+        for name, mod in package.__dict__.iteritems():
+            if getattr(mod, 'dotransform', ''):
+                transforms[name] = ShellCommand(mod)
+        InteractiveConsole.__init__(self, locals=transforms)
+        self.init_history(path.expanduser('~/.mtgsh_history'))
 
     def init_history(self, histfile):
         readline.parse_and_bind('tab: complete')

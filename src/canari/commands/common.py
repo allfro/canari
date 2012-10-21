@@ -124,6 +124,11 @@ def import_transform(script):
     return __import__(script, globals(), locals(), ['dotransform'])
 
 
+def import_package(package):
+    fix_pypath()
+    return __import__(package, globals(), locals(), ['*'])
+
+
 def cmd_name(name):
     return name.replace('canari.commands.', '').replace('_', '-')
 

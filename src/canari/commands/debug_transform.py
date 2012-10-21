@@ -5,8 +5,7 @@ from common import croak, import_transform, cmd_name, console_message, fix_binpa
 from ..maltego.utils import onterminate, parseargs
 from ..config import config
 
-from distutils.sysconfig import get_config_var
-from os import execvp, geteuid, name, path
+from os import execvp, geteuid, name
 from argparse import ArgumentParser
 from traceback import format_exc
 from sys import argv
@@ -66,13 +65,12 @@ def run(args):
     [transform, params, value, fields] = parseargs(['canari %s' % cmd_name(__name__)] + args)
 
     m = None
-    pysudo = path.join(get_config_var('BINDIR'), 'pysudo')
     fix_binpath(config['default/path'])
     try:
         m = import_transform(transform)
 
         if name == 'posix' and hasattr(m.dotransform, 'privileged') and geteuid():
-            execvp(pysudo, [pysudo] + list(argv))
+            execvp('sudo', ['sudo'] + list(argv))
             exit(-1)
 
         if hasattr(m, 'onterminate'):
