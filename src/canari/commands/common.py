@@ -31,7 +31,7 @@ def get_commands(module='canari.commands'):
 
 
 def _detect_settings_dir(d):
-    vs = [ i for i in listdir(d) if path.isdir(sep.join([d, i])) ]
+    vs = [ i for i in listdir(d) if path.isdir(sep.join([d, i])) if path.isdir(sep.join([d, i, 'config']))]
     if len(vs) == 1:
         return sep.join([d, vs[0]])
     else:
