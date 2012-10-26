@@ -170,6 +170,22 @@ def updateconf(c, f):
     chdir(ld)
 
 
+def installconf(opts, args):
+    src = resource_filename('canari.resources.template', 'canari.plate')
+    writeconf(
+        src,
+        sep.join([opts.working_dir, 'canari.conf']),
+        sub=True,
+        command=' '.join(['canari install'] + args),
+        config=('%s.conf' % opts.package) if opts.package != 'canari' else '',
+        path='${PATH},/usr/local/bin,/opt/local/bin' if name == 'posix' else ''
+    )
+
+    if opts.package != 'canari':
+        src = resource_filename('%s.resources.etc' % opts.package, '%s.conf' % opts.package)
+        writeconf(src, sep.join([opts.working_dir, '%s.conf' % opts.package]), sub=False)
+        updateconf('%s.conf' % opts.package, sep.join([opts.working_dir, 'canari.conf']))
+
 # Main
 def run(args):
 
@@ -181,8 +197,17 @@ def run(args):
     if opts.package.endswith('.transforms'):
         opts.package = opts.package.replace('.transforms', '')
 
+    try:
+        installconf(opts, args)
+    except ImportError:
+        pass
+
     print ('Looking for transforms in %s.transforms' % opts.package)
-    m = __import__('%s.transforms' % opts.package, globals(), locals(), ['*'])
+    try:
+        m = __import__('%s.transforms' % opts.package, globals(), locals(), ['*'])
+    except ImportError:
+        print "Not a valid canari package. Couldn't find the '%s.transforms' package in '%s'." % (opts.package, opts.package)
+        exit(-1)
 
     for t in m.__all__:
         transform = '%s.transforms.%s' % (opts.package, t)
@@ -201,18 +226,3 @@ def run(args):
     if not transforms:
         print ('Error: no transforms found...')
         exit(-1)
-    else:
-        src = resource_filename('canari.resources.template', 'canari.plate')
-        writeconf(
-            src,
-            sep.join([opts.working_dir, 'canari.conf']),
-            sub=True,
-            command=' '.join(['canari install'] + args),
-            config=('%s.conf' % opts.package) if opts.package != 'canari' else '',
-            path='${PATH},/usr/local/bin,/opt/local/bin' if name == 'posix' else ''
-        )
-
-        if opts.package != 'canari':
-            src = resource_filename('%s.resources.etc' % opts.package, '%s.conf' % opts.package)
-            writeconf(src, sep.join([opts.working_dir, '%s.conf' % opts.package]), sub=False)
-            updateconf('%s.conf' % opts.package, sep.join([opts.working_dir, 'canari.conf']))
