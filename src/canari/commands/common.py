@@ -4,6 +4,8 @@ from canari.config import CanariConfigParser
 
 from os import path, listdir, sep, environ, mkdir, pathsep, getcwd
 from pkg_resources import resource_filename
+from distutils.dist import Distribution
+from distutils.command.install import install
 from sys import path as pypath, platform
 from datetime import datetime
 from string import Template
@@ -18,6 +20,12 @@ __version__ = '0.1'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
+
+
+def get_bin_dir():
+    d = install(Distribution())
+    d.finalize_options()
+    return d.install_scripts
 
 
 def get_commands(module='canari.commands'):

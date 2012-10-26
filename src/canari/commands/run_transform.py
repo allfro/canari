@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
 from ..maltego.message import MaltegoException, MaltegoTransformResponseMessage
+from common import cmd_name, import_transform, fix_binpath, get_bin_dir
 from ..maltego.utils import onterminate, parseargs, croak, message
-from common import cmd_name, import_transform, fix_binpath
 
-from distutils.sysconfig import get_config_var
 from os import execvp, geteuid, name, path
 from argparse import ArgumentParser
 from traceback import format_exc
@@ -66,7 +65,7 @@ def run(args):
     [transform, params, value, fields] = parseargs(['canari %s' % cmd_name(__name__)] + args)
 
     m = None
-    pysudo = path.join(get_config_var('BINDIR'), 'pysudo')
+    pysudo = path.join(get_bin_dir(), 'pysudo')
 
     fix_binpath(config['default/path'])
     try:

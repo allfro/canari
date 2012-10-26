@@ -4,7 +4,6 @@ from common import console_message, cmd_name, highlight, fix_pypath, fix_binpath
 from ..maltego.message import MaltegoTransformResponseMessage
 from ..config import config
 
-from distutils.sysconfig import get_config_var
 from os import path, name, geteuid, execvp
 from code import InteractiveConsole
 from argparse import ArgumentParser

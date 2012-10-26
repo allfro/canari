@@ -284,14 +284,19 @@ class Entity(MaltegoElement):
 
     def __init__(self, value, **kwargs):
         super(Entity, self).__init__("Entity")
-        type = kwargs.get('type', None)
+        type = kwargs.pop('type', None)
         if type is None:
             self.type = '%s.%s' % (self.namespace, self.__class__.__name__ if self.name is None else self.name)
+        else:
+            self.type = type
         self.value = value
-        self.weight = kwargs.get('weight', self.weight)
-        self.iconurl = kwargs.get('iconurl', self.iconurl)
-        self.appendelements(kwargs.get('fields'))
-        self.appendelements(kwargs.get('labels'))
+        self.weight = kwargs.pop('weight', self.weight)
+        self.iconurl = kwargs.pop('iconurl', self.iconurl)
+        self.appendelements(kwargs.pop('fields', None))
+        self.appendelements(kwargs.pop('labels', None))
+        for p in kwargs:
+            if hasattr(self, p):
+                setattr(self, p, kwargs[p])
 
     def appendelement(self, other):
         if isinstance(other, Field):

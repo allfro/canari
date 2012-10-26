@@ -4,11 +4,10 @@ from ..maltego.configuration import  (MaltegoTransform, CmdCwdTransformProperty,
                                CmdLineTransformProperty, CmdParmTransformProperty, InputConstraint, TransformSet,
                                TransformSettings, CmdCwdTransformPropertySetting, CmdDbgTransformPropertySetting,
                                CmdLineTransformPropertySetting, CmdParmTransformPropertySetting)
-from common import detect_settings_dir, cmd_name, fix_pypath
+from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir
 from ..maltego.message import  ElementTree
 
 from os import sep, path, mkdir, chdir, getcwd, name
-from distutils.sysconfig import get_config_var
 from pkg_resources import resource_filename
 from argparse import ArgumentParser
 from string import Template
@@ -125,7 +124,7 @@ def install_transform(module, name, author, spec, prefix, working_dir):
         ElementTree(transform).write(sep.join([installdir, '%s.transform' % n]))
 
         transformsettings = TransformSettings(properties=[
-            CmdLineTransformPropertySetting(path.join(get_config_var('BINDIR'), 'dispatcher')),
+            CmdLineTransformPropertySetting(path.join(get_bin_dir(), 'dispatcher')),
             CmdParmTransformPropertySetting(name),
             CmdCwdTransformPropertySetting(working_dir),
             CmdDbgTransformPropertySetting(spec.debug)
