@@ -71,7 +71,11 @@ def parse_args(args):
     args = parser.parse_args(args)
 
     if args.settings_dir is detect_settings_dir:
-        args.settings_dir = detect_settings_dir()
+        try:
+            args.settings_dir = detect_settings_dir()
+        except OSError:
+            print "Make sure you've run Maltego for the first time and activated your license."
+            exit(-1)
 
     return args
 
