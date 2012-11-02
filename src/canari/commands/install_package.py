@@ -21,7 +21,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -209,8 +209,8 @@ def run(args):
     print ('Looking for transforms in %s.transforms' % opts.package)
     try:
         m = __import__('%s.transforms' % opts.package, globals(), locals(), ['*'])
-    except ImportError:
-        print "Not a valid canari package. Couldn't find the '%s.transforms' package in '%s'." % (opts.package, opts.package)
+    except ImportError, e:
+        print ("Does not appear to be a valid canari package. Couldn't import the '%s.transforms' package in '%s'. Error message: %s" % (opts.package, opts.package, e))
         exit(-1)
 
     for t in m.__all__:
