@@ -4,7 +4,7 @@ from ..maltego.configuration import  (MaltegoTransform, CmdCwdTransformProperty,
                                CmdLineTransformProperty, CmdParmTransformProperty, InputConstraint, TransformSet,
                                TransformSettings, CmdCwdTransformPropertySetting, CmdDbgTransformPropertySetting,
                                CmdLineTransformPropertySetting, CmdParmTransformPropertySetting)
-from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir
+from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir, import_transform, import_package
 from ..maltego.message import  ElementTree
 
 from os import sep, path, mkdir, chdir, getcwd, name
@@ -208,7 +208,7 @@ def run(args):
 
     print ('Looking for transforms in %s.transforms' % opts.package)
     try:
-        m = __import__('%s.transforms' % opts.package, globals(), locals(), ['*'])
+        m = import_package('%s.transforms' % opts.package)
     except ImportError, e:
         print ("Does not appear to be a valid canari package. Couldn't import the '%s.transforms' package in '%s'. Error message: %s" % (opts.package, opts.package, e))
         exit(-1)
@@ -216,7 +216,7 @@ def run(args):
     for t in m.__all__:
         transform = '%s.transforms.%s' % (opts.package, t)
 
-        m2 = __import__(transform, globals(), locals(), ['dotransform'])
+        m2 = import_transform(transform)
         if hasattr(m2, 'dotransform') and hasattr(m2.dotransform, 'label'):
             install_transform(
                 m2.__name__,

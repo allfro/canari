@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from common import detect_settings_dir, cmd_name, fix_pypath
+from common import detect_settings_dir, cmd_name, fix_pypath, import_package, import_transform
 
 from os import sep, path, mkdir, listdir, unlink, rmdir
 from argparse import ArgumentParser
@@ -11,7 +11,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -91,11 +91,11 @@ def run(args):
 
     fix_pypath()
 
-    m = __import__(opts.package, globals(), locals(), ['__all__'])
+    m = import_package(opts.package)
 
     for t in m.__all__:
         transform = '%s.%s' % (opts.package, t)
-        m2 = __import__(transform, globals(), locals(), ['dotransform'])
+        m2 = import_transform(transform)
         if hasattr(m2, 'dotransform') and hasattr(m2.dotransform, 'label'):
             uninstall_transform(
                 m2.__name__,

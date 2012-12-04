@@ -5,14 +5,16 @@ from resource import conf
 from re import findall, search, match, split
 from ConfigParser import SafeConfigParser
 from os import environ, getcwd, sep
+from utils.wordlist import wordlist
 from urlparse import urlsplit
+
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -86,6 +88,8 @@ class CanariConfigParser(SafeConfigParser):
                     value.append(v)
             else:
                 value = value.replace(r'\,', ',')
+        if option == 'wordlist':
+            value = wordlist(value)
         return value
 
     def __setitem__(self, key, value):

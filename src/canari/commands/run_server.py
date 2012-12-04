@@ -2,7 +2,7 @@
 
 from ..maltego.message import (MaltegoTransformResponseMessage, MaltegoException,
                                MaltegoTransformExceptionMessage, MaltegoMessage, Message)
-from common import cmd_name, import_transform, fix_binpath, fix_pypath
+from common import cmd_name, import_transform, fix_binpath, fix_pypath, import_package
 from ..config import config
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
@@ -12,7 +12,7 @@ from SocketServer import ThreadingMixIn
 from ssl import wrap_socket, CERT_NONE
 from argparse import ArgumentParser
 from cStringIO import StringIO
-from socket import gethostname
+from socket import getfqdn
 from urlparse import urlsplit
 from hashlib import md5
 from sys import argv
@@ -24,7 +24,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -81,7 +81,7 @@ parser.add_argument(
 parser.add_argument(
     '--hostname',
     metavar='[hostname]',
-    default=gethostname(),
+    default=getfqdn(),
     help='The hostname of this transform server.'
 )
 
@@ -114,9 +114,10 @@ def message(m, r):
         if e.iconurl is not None:
             e.iconurl = e.iconurl.strip()
             if e.iconurl.startswith('file://'):
-                new_url = '/%s' % md5(e.iconurl).hexdigest()
-                if new_url not in r.server.resources:
-                    r.server.resources[new_url] = e.iconurl[7:]
+                path = '/%s' % md5(e.iconurl).hexdigest()
+                new_url = '%s://%s%s' % ('https' if r.server.is_ssl else 'http', r.server.hostname, path)
+                if path not in r.server.resources:
+                    r.server.resources[path] = e.iconurl[7:]
                 e.iconurl = new_url
 
     Message(MaltegoMessage(m)).write(sio)
@@ -167,6 +168,8 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
             value = e.find('Value').text or ''
             fields = dict([(f.get('Name', ''), f.text) for f in xml.findall('Entities/Entity/AdditionalFields/Field')])
             params = dict([(f.get('Name', ''), f.text) for f in xml.findall('TransformFields/Field')])
+            for k, i in params.items():
+                config[k.replace('.', '/', 1)] = i
             limits = xml.find('Limits').attrib
 
             msg = t[0](
@@ -228,7 +231,7 @@ class MaltegoHTTPServer(HTTPServer):
     is_ssl = False
 
     def __init__(self, server_address=('', 8080), RequestHandlerClass=MaltegoTransformRequestHandler,
-                 bind_and_activate=True, transforms={}, hostname=gethostname()):
+                 bind_and_activate=True, transforms={}, hostname=getfqdn()):
         HTTPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate)
         self.transforms = transforms
         self.hostname = hostname
@@ -239,7 +242,7 @@ class SecureMaltegoHTTPServer(MaltegoHTTPServer):
     is_ssl = True
 
     def __init__(self, server_address=('', 8080), RequestHandlerClass=MaltegoTransformRequestHandler,
-                 bind_and_activate=True, transforms={}, cert='cert.pem', hostname=gethostname()):
+                 bind_and_activate=True, transforms={}, cert='cert.pem', hostname=getfqdn()):
         MaltegoHTTPServer.__init__(
             self,
             server_address,
@@ -288,7 +291,7 @@ def run(args):
 
             print ('Loading transform package %s' % p)
 
-            m = __import__(p, globals(), locals(), ['*'])
+            m = import_package(p)
 
             for t in m.__all__:
 
