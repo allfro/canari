@@ -7,8 +7,8 @@ from xml.etree.cElementTree import XML
 from argparse import ArgumentParser
 from os import walk, path as ospath
 from zipfile import ZipFile
-from re import sub, findall
 from imp import load_source
+from re import sub
 
 
 __author__ = 'Nadeem Douba'
