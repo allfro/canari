@@ -25,5 +25,6 @@ __all__ = [
     'delete_transform',
     'rename_transform',
     'list_commands',
-    'run_server'
+    'run_server',
+    'generate_entities'
 ]
