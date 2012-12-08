@@ -35,6 +35,7 @@ def write_setup(package_name, values):
     write_template(sep.join([package_name, '.canari']), read_template('_canari', values))
     write_template(sep.join([package_name, 'setup.py']), read_template('setup', values))
     write_template(sep.join([package_name, 'README.md']), read_template('README', values))
+    write_template(sep.join([package_name, 'MANIFEST.in']), read_template('MANIFEST', values))
 
 
 def write_root(base, init):
