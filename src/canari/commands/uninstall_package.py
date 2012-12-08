@@ -2,6 +2,8 @@
 
 from common import detect_settings_dir, cmd_name, fix_pypath, import_package, import_transform
 
+from xml.etree.cElementTree import ElementTree, SubElement, XML
+from pkg_resources import resource_listdir, resource_filename
 from os import sep, path, mkdir, listdir, unlink, rmdir
 from argparse import ArgumentParser
 
@@ -45,6 +47,33 @@ def description():
     return parser.description
 
 
+def uninstallnbattr(machine, xml):
+    e = xml.find('fileobject[@name="%s"]' % machine)
+    if e is not None:
+        xml.remove(e)
+
+def uninstallmachines(package, prefix):
+    try:
+        prefix = path.join(prefix, 'config', 'Maltego', 'Machines')
+        n = path.join(prefix, '.nbattrs')
+        e = XML('<attributes version="1.0"/>')
+        if path.exists(n):
+            e = XML(file(n).read())
+        if not path.exists(prefix):
+            return
+        package = '%s.resources.maltego' % package
+        for m in filter(lambda x: x.endswith('.machine'), resource_listdir(package, '')):
+            print 'Uninstalling machine %s...' % m
+            try:
+                unlink(path.join(prefix, m))
+                uninstallnbattr(m, e)
+            except OSError:
+                pass
+        ElementTree(e).write(file(n, 'wb'))
+    except ImportError, e:
+        pass
+
+
 def uninstall_transform(module, spec, prefix):
 
     installdir = sep.join([prefix, 'config', 'Maltego', 'TransformRepositories', 'Local'])
@@ -86,15 +115,15 @@ def run(args):
 
     opts = parse_args(args)
 
-    if not opts.package.endswith('.transforms'):
-        opts.package = '%s.transforms' % opts.package
+    if opts.package.endswith('.transforms'):
+        opts.package = opts.package.replace('.transforms', '')
 
     fix_pypath()
 
-    m = import_package(opts.package)
+    m = import_package('%s.transforms' % opts.package)
 
     for t in m.__all__:
-        transform = '%s.%s' % (opts.package, t)
+        transform = '%s.transforms.%s' % (opts.package, t)
         m2 = import_transform(transform)
         if hasattr(m2, 'dotransform') and hasattr(m2.dotransform, 'label'):
             uninstall_transform(
@@ -102,3 +131,5 @@ def run(args):
                 m2.dotransform,
                 opts.settings_dir
             )
+
+    uninstallmachines(opts.package, opts.settings_dir)

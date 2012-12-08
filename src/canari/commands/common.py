@@ -47,7 +47,7 @@ def _detect_settings_dir(d):
             print('Multiple versions of Maltego detected: ')
             for i, v in enumerate(vs):
                 print('[%d] Maltego %s' % (i, v))
-            r = raw_input('Please select which version you wish to install the transforms in [0]: ')
+            r = raw_input('Please select which version you wish to use [0]: ')
             try:
                 if not r:
                     return sep.join([d, vs[0]])

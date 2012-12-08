@@ -5,14 +5,16 @@ from ..maltego.configuration import  (MaltegoTransform, CmdCwdTransformProperty,
                                TransformSettings, CmdCwdTransformPropertySetting, CmdDbgTransformPropertySetting,
                                CmdLineTransformPropertySetting, CmdParmTransformPropertySetting)
 from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir, import_transform, import_package
-from ..maltego.message import  ElementTree
+from ..maltego.message import ElementTree
 
+from pkg_resources import resource_filename, resource_listdir
+from xml.etree.cElementTree import XML, Element, SubElement
 from os import sep, path, mkdir, chdir, getcwd, name
-from pkg_resources import resource_filename
 from argparse import ArgumentParser
+from re import findall, sub
+from zipfile import ZipFile
 from string import Template
 from sys import stderr
-from re import sub
 
 
 
@@ -190,6 +192,79 @@ def installconf(opts, args):
         writeconf(src, sep.join([opts.working_dir, '%s.conf' % opts.package]), sub=False)
         updateconf('%s.conf' % opts.package, sep.join([opts.working_dir, 'canari.conf']))
 
+
+def installmtz(package, prefix):
+    try:
+        src = resource_filename('%s.resources.maltego' % package, 'entities.mtz')
+        if not path.exists(src):
+            return
+        prefix = path.join(prefix, 'config', 'Maltego', 'Entities')
+        z = ZipFile(src)
+        entities = filter(lambda x: x.endswith('.entity'), z.namelist())
+
+        for e in entities:
+            data = z.open(e).read()
+            xml = XML(data)
+            category = xml.get('category')
+            catdir = path.join(prefix, category)
+            if not path.exists(catdir):
+                mkdir(catdir, mode=0755)
+            p = path.join(catdir, path.basename(e))
+            print 'Installing entity %s to %s...' % (e, p)
+            with open(p, 'wb') as f:
+                f.write(data)
+    except ImportError:
+        pass
+
+
+def installnbattr(xml, src, dst):
+    src = findall('machine\(([^\)]+)', src)[0]
+    if not src:
+        return
+    props = sub('\s*\n\s*|"', '', src).split(',')
+    e = None
+    for p in props:
+        if ':' not in p:
+            if xml.find('fileobject[@name="%s"]' % dst) is not None:
+                return
+            e = SubElement(xml, 'fileobject')
+            e.set('name', dst)
+        else:
+            n, v = p.split(':')
+            s = SubElement(e, 'attr')
+            s.set('name', n)
+            s.set('stringvalue', v)
+    s = SubElement(e, 'attr')
+    s.set('name', 'readonly')
+    s.set('boolvalue', 'false')
+    s = SubElement(e, 'attr')
+    s.set('name', 'enabled')
+    s.set('boolvalue', 'true')
+
+
+def installmachines(package, prefix):
+    try:
+        prefix = path.join(prefix, 'config', 'Maltego', 'Machines')
+        n = path.join(prefix, '.nbattrs')
+        e = XML('<attributes version="1.0"/>')
+        if path.exists(n):
+            e = XML(file(n).read())
+        if not path.exists(prefix):
+            mkdir(prefix, 0755)
+        package = '%s.resources.maltego' % package
+        for m in filter(lambda x: x.endswith('.machine'), resource_listdir(package, '')):
+            src = resource_filename(package, m)
+            dst = path.join(prefix, m)
+            print 'Installing machine %s to %s...' % (src, dst)
+            with open(dst, 'wb') as f:
+                data = file(src).read()
+                f.write(data)
+                installnbattr(e, data, m)
+        ElementTree(e).write(file(n, 'wb'))
+    except ImportError, e:
+        pass
+
+
 # Main
 def run(args):
 
@@ -226,6 +301,9 @@ def run(args):
                 opts.settings_dir,
                 opts.working_dir
             )
+
+    installmtz(opts.package, opts.settings_dir)
+    installmachines(opts.package, opts.settings_dir)
 
     if not transforms:
         print ('Error: no transforms found...')

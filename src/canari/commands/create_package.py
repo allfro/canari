@@ -47,7 +47,7 @@ def write_root(base, init):
 def write_resources(package_name, resources, init, values):
     write_template(
         sep.join([resources, '__init__.py']),
-        init + generate_all('etc', 'images')
+        init + generate_all('etc', 'images', 'maltego')
     )
 
     write_template(
@@ -57,6 +57,11 @@ def write_resources(package_name, resources, init, values):
 
     write_template(
         sep.join([resources, 'images', '__init__.py']),
+        init
+    )
+
+    write_template(
+        sep.join([resources, 'maltego', '__init__.py']),
         init
     )
 
@@ -168,7 +173,8 @@ def run(args):
             [transforms, 'common'],
             resources,
             [resources, 'etc'],
-            [resources, 'images']
+            [resources, 'images'],
+            [resources, 'maltego']
         )
     else:
         print('A directory with the name %s already exists... exiting' % package_name)
