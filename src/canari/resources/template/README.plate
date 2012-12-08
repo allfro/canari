@@ -13,6 +13,8 @@ directory structure to use in the following manner:
 * `src/${package}/transforms/common/entities.py` is where you define your custom entities. Take a look at the
   examples provided if you want to play around with custom entities.
 * `maltego/` is where you can store your Maltego entity exports.
+* `src/${package}/resources/maltego` directory is where your `entities.mtz` and `*.machine` files can be stored for auto
+  install and uninstall.
 
 If you're going to add a new transform in the transforms directory, remember to update the `__all__` variable in
 `src/${package}/transforms/__init__.py`. Otherwise, `canari install-package` won't attempt to install the transform.
