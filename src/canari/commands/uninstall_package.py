@@ -2,9 +2,9 @@
 
 from common import detect_settings_dir, cmd_name, fix_pypath, import_package, import_transform
 
-from xml.etree.cElementTree import ElementTree, SubElement, XML
-from pkg_resources import resource_listdir, resource_filename
-from os import sep, path, mkdir, listdir, unlink, rmdir
+from xml.etree.cElementTree import ElementTree, XML
+from os import path, mkdir, listdir, unlink, rmdir
+from pkg_resources import resource_listdir
 from argparse import ArgumentParser
 
 
@@ -76,27 +76,27 @@ def uninstallmachines(package, prefix):
 
 def uninstall_transform(module, spec, prefix):
 
-    installdir = sep.join([prefix, 'config', 'Maltego', 'TransformRepositories', 'Local'])
+    installdir = path.join(prefix, 'config', 'Maltego', 'TransformRepositories', 'Local')
 
     if not path.exists(installdir):
         mkdir(installdir)
 
-    setsdir = sep.join([prefix, 'config', 'Maltego', 'TransformSets'])
+    setsdir = path.join(prefix, 'config', 'Maltego', 'TransformSets')
 
     for i,n in enumerate(spec.uuids):
 
         print ('Uninstalling transform %s from %s...' % (n, module))
 
         if spec.inputs[i][0] is not None:
-            setdir = sep.join([setsdir, spec.inputs[i][0]])
-            f = sep.join([setdir, n])
+            setdir = path.join(setsdir, spec.inputs[i][0])
+            f = path.join(setdir, n)
             if path.exists(f):
                 unlink(f)
             if path.exists(setdir) and not listdir(setdir):
                 rmdir(setdir)
 
-        tf = sep.join([installdir, '%s.transform' % n])
-        tsf = sep.join([installdir, '%s.transformsettings' % n])
+        tf = path.join(installdir, '%s.transform' % n)
+        tsf = path.join(installdir, '%s.transformsettings' % n)
 
         if path.exists(tf):
             unlink(tf)

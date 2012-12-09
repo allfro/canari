@@ -39,9 +39,9 @@ def get_commands(module='canari.commands'):
 
 
 def _detect_settings_dir(d):
-    vs = [ i for i in listdir(d) if path.isdir(sep.join([d, i])) if path.isdir(sep.join([d, i, 'config']))]
+    vs = [ i for i in listdir(d) if path.isdir(path.join(d, i)) if path.isdir(path.join(d, i, 'config'))]
     if len(vs) == 1:
-        return sep.join([d, vs[0]])
+        return path.join(d, vs[0])
     else:
         while True:
             print('Multiple versions of Maltego detected: ')
@@ -50,9 +50,9 @@ def _detect_settings_dir(d):
             r = raw_input('Please select which version you wish to use [0]: ')
             try:
                 if not r:
-                    return sep.join([d, vs[0]])
+                    return path.join(d, vs[0])
                 elif int(r) < len(vs):
-                    return sep.join([d, vs[int(r)]])
+                    return path.join(d, vs[int(r)])
             except ValueError:
                 pass
             print('Invalid selection... %s' % repr(r))
@@ -62,11 +62,11 @@ def _detect_settings_dir(d):
 def detect_settings_dir():
     d = None
     if platform.startswith('linux'):
-        d = _detect_settings_dir(sep.join([path.expanduser('~'), '.maltego']))
+        d = _detect_settings_dir(path.join(path.expanduser('~'), '.maltego'))
     elif platform == 'darwin':
-        d = _detect_settings_dir(sep.join([path.expanduser('~'), 'Library', 'Application Support', 'maltego']))
+        d = _detect_settings_dir(path.join(path.expanduser('~'), 'Library', 'Application Support', 'maltego'))
     elif platform == 'win32':
-        d = _detect_settings_dir(sep.join([environ['APPDATA'], '.maltego']))
+        d = _detect_settings_dir(path.join(environ['APPDATA'], '.maltego'))
     else:
         raise NotImplementedError('Unknown or unsupported OS: %s' % repr(platform))
     return d

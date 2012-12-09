@@ -2,7 +2,7 @@
 
 from common import cmd_name
 
-from os import path, sep, getcwd, unlink
+from os import path, getcwd, unlink
 from argparse import ArgumentParser
 from re import sub
 
@@ -55,9 +55,9 @@ def run(args):
 
     opts = parse_args(args)
 
-    initf = sep.join([opts.transform_dir, '__init__.py'])
+    initf = path.join(opts.transform_dir, '__init__.py')
     transform = opts.transform
-    transformf = sep.join([opts.transform_dir, transform if transform.endswith('.py') else '%s.py' % transform ])
+    transformf = path.join(opts.transform_dir, transform if transform.endswith('.py') else '%s.py' % transform )
 
     if not path.exists(initf):
         print ('Directory %s does not appear to be a python package directory... quitting!' % repr(opts.transform_dir))

@@ -4,7 +4,7 @@ from resource import conf
 
 from re import findall, search, match, split
 from ConfigParser import SafeConfigParser
-from os import environ, getcwd, sep
+from os import environ, getcwd, path
 from utils.wordlist import wordlist
 from urlparse import urlsplit
 
@@ -101,8 +101,8 @@ class CanariConfigParser(SafeConfigParser):
 
 config = CanariConfigParser()
 
-dconf = sep.join([ conf ])
-lconf = sep.join([ getcwd(), 'canari.conf' ])
+dconf = path.join( conf )
+lconf = path.join( getcwd(), 'canari.conf' )
 
 config.read([ dconf , lconf ])
 config.read(config['default/configs'])

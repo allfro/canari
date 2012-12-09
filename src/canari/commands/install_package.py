@@ -8,8 +8,8 @@ from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir, impor
 from ..maltego.message import ElementTree
 
 from pkg_resources import resource_filename, resource_listdir
-from xml.etree.cElementTree import XML, Element, SubElement
-from os import sep, path, mkdir, chdir, getcwd, name
+from xml.etree.cElementTree import XML, SubElement
+from os import path, mkdir, chdir, getcwd, name
 from argparse import ArgumentParser
 from re import findall, sub
 from zipfile import ZipFile
@@ -85,12 +85,12 @@ def parse_args(args):
 # Logic to install transforms
 def install_transform(module, name, author, spec, prefix, working_dir):
 
-    installdir = sep.join([prefix, 'config', 'Maltego', 'TransformRepositories', 'Local'])
+    installdir = path.join(prefix, 'config', 'Maltego', 'TransformRepositories', 'Local')
 
     if not path.exists(installdir):
         mkdir(installdir)
 
-    setsdir = sep.join([prefix, 'config', 'Maltego', 'TransformSets'])
+    setsdir = path.join(prefix, 'config', 'Maltego', 'TransformSets')
 
     for i,n in enumerate(spec.uuids):
 
@@ -104,10 +104,10 @@ def install_transform(module, name, author, spec, prefix, working_dir):
 
         sets = None
         if spec.inputs[i][0] is not None:
-            setdir = sep.join([setsdir, spec.inputs[i][0]])
+            setdir = path.join(setsdir, spec.inputs[i][0])
             if not path.exists(setdir):
                 mkdir(setdir)
-            open(sep.join([setdir, n]), 'w').close()
+            open(path.join(setdir, n), 'w').close()
             sets=TransformSet(spec.inputs[i][0])
 
         transform = MaltegoTransform(
@@ -127,7 +127,7 @@ def install_transform(module, name, author, spec, prefix, working_dir):
         transform.sets
 
 
-        ElementTree(transform).write(sep.join([installdir, '%s.transform' % n]))
+        ElementTree(transform).write(path.join(installdir, '%s.transform' % n))
 
         transformsettings = TransformSettings(properties=[
             CmdLineTransformPropertySetting(path.join(get_bin_dir(), 'dispatcher')),
@@ -135,7 +135,7 @@ def install_transform(module, name, author, spec, prefix, working_dir):
             CmdCwdTransformPropertySetting(working_dir),
             CmdDbgTransformPropertySetting(spec.debug)
         ])
-        ElementTree(transformsettings).write(sep.join([installdir, '%s.transformsettings' % n]))
+        ElementTree(transformsettings).write(path.join(installdir, '%s.transformsettings' % n))
 
 
 def writeconf(sf, df, **kwargs):
@@ -180,7 +180,7 @@ def installconf(opts, args):
     src = resource_filename('canari.resources.template', 'canari.plate')
     writeconf(
         src,
-        sep.join([opts.working_dir, 'canari.conf']),
+        path.join(opts.working_dir, 'canari.conf'),
         sub=True,
         command=' '.join(['canari install'] + args),
         config=('%s.conf' % opts.package) if opts.package != 'canari' else '',
@@ -189,8 +189,8 @@ def installconf(opts, args):
 
     if opts.package != 'canari':
         src = resource_filename('%s.resources.etc' % opts.package, '%s.conf' % opts.package)
-        writeconf(src, sep.join([opts.working_dir, '%s.conf' % opts.package]), sub=False)
-        updateconf('%s.conf' % opts.package, sep.join([opts.working_dir, 'canari.conf']))
+        writeconf(src, path.join(opts.working_dir, '%s.conf' % opts.package), sub=False)
+        updateconf('%s.conf' % opts.package, path.join(opts.working_dir, 'canari.conf'))
 
 
 def installmtz(package, prefix):
@@ -282,6 +282,7 @@ def run(args):
         pass
 
     print ('Looking for transforms in %s.transforms' % opts.package)
+    m = None
     try:
         m = import_package('%s.transforms' % opts.package)
     except ImportError, e:

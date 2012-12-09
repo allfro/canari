@@ -4,7 +4,7 @@ from common import write_template, read_template, cmd_name, init_pkg
 
 
 from argparse import ArgumentParser
-from os import path, sep, getcwd
+from os import path, getcwd
 from re import sub
 
 
@@ -56,10 +56,10 @@ def run(args):
 
     opts = parse_args(args)
 
-    initf = sep.join([opts.transform_dir, '__init__.py'])
+    initf = path.join(opts.transform_dir, '__init__.py')
     transform = opts.transform
     directory = opts.transform_dir
-    transformf = sep.join([directory, transform if transform.endswith('.py') else '%s.py' % transform ])
+    transformf = path.join(directory, transform if transform.endswith('.py') else '%s.py' % transform )
 
     if not path.exists(initf):
         print ('Directory %s does not appear to be a python package directory... quitting!' % repr(opts.transform_dir))

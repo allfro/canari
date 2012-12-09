@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from os import path, name, sep, stat
+from os import path, name, stat
 from tempfile import gettempdir
 from sys import maxint
 from time import time
@@ -50,7 +50,7 @@ if name == 'nt':
 
 
 def cookie(name):
-    return sep.join([gettempdir(), name])
+    return path.join(gettempdir(), name)
 
 
 class fsemaphore(file):

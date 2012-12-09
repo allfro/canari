@@ -5,7 +5,7 @@ from common import read_template, write_template, generate_all, build_skeleton, 
 from argparse import ArgumentParser
 from datetime import datetime
 from getpass import getuser
-from os import path, sep
+from os import path
 
 
 __author__ = 'Nadeem Douba'
@@ -32,42 +32,42 @@ parser.add_argument(
 
 
 def write_setup(package_name, values):
-    write_template(sep.join([package_name, '.canari']), read_template('_canari', values))
-    write_template(sep.join([package_name, 'setup.py']), read_template('setup', values))
-    write_template(sep.join([package_name, 'README.md']), read_template('README', values))
-    write_template(sep.join([package_name, 'MANIFEST.in']), read_template('MANIFEST', values))
+    write_template(path.join(package_name, '.canari'), read_template('_canari', values))
+    write_template(path.join(package_name, 'setup.py'), read_template('setup', values))
+    write_template(path.join(package_name, 'README.md'), read_template('README', values))
+    write_template(path.join(package_name, 'MANIFEST.in'), read_template('MANIFEST', values))
 
 
 def write_root(base, init):
     write_template(
-        sep.join([base, '__init__.py']),
+        path.join(base, '__init__.py'),
         init + generate_all('resources', 'transforms')
     )
 
 
 def write_resources(package_name, resources, init, values):
     write_template(
-        sep.join([resources, '__init__.py']),
+        path.join(resources, '__init__.py'),
         init + generate_all('etc', 'images', 'maltego')
     )
 
     write_template(
-        sep.join([resources, 'etc', '__init__.py']),
+        path.join(resources, 'etc', '__init__.py'),
         init
     )
 
     write_template(
-        sep.join([resources, 'images', '__init__.py']),
+        path.join(resources, 'images', '__init__.py'),
         init
     )
 
     write_template(
-        sep.join([resources, 'maltego', '__init__.py']),
+        path.join(resources, 'maltego', '__init__.py'),
         init
     )
 
     write_template(
-        sep.join([resources, 'etc', '%s.conf' % package_name]),
+        path.join(resources, 'etc', '%s.conf' % package_name),
         read_template('conf', values)
     )
 
@@ -76,27 +76,27 @@ def write_common(transforms, init, values):
 
     if values['example']:
         write_template(
-            sep.join([transforms, '__init__.py']),
+            path.join(transforms, '__init__.py'),
             init + generate_all('common', 'helloworld')
         )
 
         write_template(
-            sep.join([transforms, 'helloworld.py']),
+            path.join(transforms, 'helloworld.py'),
             read_template('transform', values)
         )
     else:
         write_template(
-            sep.join([transforms, '__init__.py']),
+            path.join(transforms, '__init__.py'),
             init + generate_all('common')
         )
 
     write_template(
-        sep.join([transforms, 'common', '__init__.py']),
+        path.join(transforms, 'common', '__init__.py'),
         init + generate_all('entities')
     )
 
     write_template(
-        sep.join([transforms, 'common', 'entities.py']),
+        path.join(transforms, 'common', 'entities.py'),
         read_template('entities', values)
     )
 
@@ -159,9 +159,9 @@ def run(args):
 
     ask_user(values)
 
-    base = sep.join([package_name, 'src', package_name])
-    transforms = sep.join([base, 'transforms'])
-    resources = sep.join([base, 'resources'])
+    base = path.join(package_name, 'src', package_name)
+    transforms = path.join(base, 'transforms')
+    resources = path.join(base, 'resources')
 
     if not path.exists(package_name):
         print('creating skeleton in %s' % package_name)
