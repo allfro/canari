@@ -21,6 +21,13 @@ __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
+def fix_etree():
+    try:
+        from xml.etree.cElementTree import XML
+        e = XML('<test><t a="1"/></test>')
+        e.find('t[@a="1"]')
+    except SyntaxError:
+        import canari.xmltools.fixetree
 
 def get_bin_dir():
     d = install(Distribution())

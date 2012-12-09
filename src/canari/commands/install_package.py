@@ -4,7 +4,7 @@ from ..maltego.configuration import  (MaltegoTransform, CmdCwdTransformProperty,
                                CmdLineTransformProperty, CmdParmTransformProperty, InputConstraint, TransformSet,
                                TransformSettings, CmdCwdTransformPropertySetting, CmdDbgTransformPropertySetting,
                                CmdLineTransformPropertySetting, CmdParmTransformPropertySetting)
-from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir, import_transform, import_package
+from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir, import_transform, import_package, fix_etree
 from ..maltego.message import ElementTree
 
 from pkg_resources import resource_filename, resource_listdir
@@ -271,7 +271,7 @@ def run(args):
     opts = parse_args(args)
 
     fix_pypath()
-
+    fix_etree()
 
     if opts.package.endswith('.transforms'):
         opts.package = opts.package.replace('.transforms', '')

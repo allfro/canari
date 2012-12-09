@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from common import detect_settings_dir, cmd_name, fix_pypath, import_package, import_transform
+from common import detect_settings_dir, cmd_name, fix_pypath, import_package, import_transform, fix_etree
 
 from xml.etree.cElementTree import ElementTree, XML
 from os import path, mkdir, listdir, unlink, rmdir
@@ -119,6 +119,8 @@ def run(args):
         opts.package = opts.package.replace('.transforms', '')
 
     fix_pypath()
+
+    fix_etree()
 
     m = import_package('%s.transforms' % opts.package)
 
