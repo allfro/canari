@@ -21,6 +21,11 @@ def superuser(f):
     return f
 
 
+def deprecated(f):
+    f.deprecated = True
+    return f
+
+
 class configure(object):
 
     def __init__(self, **kwargs):
