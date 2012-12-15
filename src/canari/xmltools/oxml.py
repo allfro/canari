@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from numbers import Number
 from copy import deepcopy
 from pickle import dumps
-from sys import stdout
+from sys import stdout, version_info
 from re import sub
 
 __author__ = 'Nadeem Douba'
@@ -305,17 +305,27 @@ class XMLSubElement(object):
 
 
 class ElementTree(ET.ElementTree):
-    """ElementTree with CDATA support."""
-    def _write(self, file, node, encoding, namespaces):
-        if node.tag == 'CDATA':
-            if node.text is not None:
-                text = node.text.encode(encoding)
-                file.write('<![CDATA[%s]]>' % text)
-        else:
-            _eto._write(self, file, node, encoding, namespaces)
+    if (2, 6) <= version_info < (2, 7):
+        def _write(self, file, node, encoding, namespaces):
+            if node.tag is 'CDATA':
+                if node.text is not None:
+                    text = node.text.encode(encoding)
+                    file.write('<![CDATA[%s]]>' % text)
+            else:
+                 _eto._write(self, file, node, encoding, namespaces)
 
     def write(self, file=stdout, encoding='us-ascii'):
         _eto.write(self, file, encoding)
+
+if version_info >= (2, 7):
+    _orig_serialize_xml = ET._serialize_xml
+
+    def _serialize_xml(write, elem, encoding, qnames, namespaces):
+        if elem.tag == 'CDATA':
+            elem.tag = None
+        _orig_serialize_xml(write, elem, encoding, qnames, namespaces)
+
+    ET._serialize_xml = _serialize_xml
 
 
 class Element(ET._ElementInterface, object):
