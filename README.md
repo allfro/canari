@@ -134,7 +134,7 @@ take a look at the various options you can override for each of the transforms.
 
 ### 3.4 - Additional Steps
 Some of the transforms in Canari-based transform packages require additional configuration in order to operate
-correctly. For example, [Sploitego][https://github.com/allfro/sploitego] requires the following web API keys to operate
+correctly. For example, [Sploitego](https://github.com/allfro/sploitego) requires the following web API keys to operate
 correctly:
 * Bing API: [Sign up](https://datamarket.azure.com/dataset/5BA839F1-12CE-4CCE-BF57-A49D98D29A44)
 * Bluecoat K9: [Sign up](http://www1.k9webprotection.com/get-k9-web-protection-free) (download not required)
