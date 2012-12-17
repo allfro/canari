@@ -14,9 +14,10 @@ from argparse import ArgumentParser
 from cStringIO import StringIO
 from socket import getfqdn
 from urlparse import urlsplit
+from re import sub, findall
 from hashlib import md5
 from sys import argv
-from re import sub
+
 
 
 __author__ = 'Nadeem Douba'
@@ -24,7 +25,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.3'
+__version__ = '0.4'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -109,19 +110,29 @@ def message(m, r):
     r.send_header('Connection', 'close')
     r.end_headers()
 
-    sio = StringIO()
-    for e in m.entities:
-        if e.iconurl is not None:
-            e.iconurl = e.iconurl.strip()
-            if e.iconurl.startswith('file://'):
-                path = '/%s' % md5(e.iconurl).hexdigest()
-                new_url = '%s://%s%s' % ('https' if r.server.is_ssl else 'http', r.server.hostname, path)
-                if path not in r.server.resources:
-                    r.server.resources[path] = e.iconurl[7:]
-                e.iconurl = new_url
+    v = None
+    if isinstance(m, basestring):
+        for url in findall("<iconurl>\s*(file://[^\s<]+)\s*</iconurl>(?im)", m):
+            path = '/%s' % md5(url).hexdigest()
+            new_url = '%s://%s%s' % ('https' if r.server.is_ssl else 'http', r.server.hostname, path)
+            if path not in r.server.resources:
+                r.server.resources[path] = url[7:]
+            m.replace(url, new_url, 1)
+        v = m
+    else:
+        sio = StringIO()
+        for e in m.entities:
+            if e.iconurl is not None:
+                e.iconurl = e.iconurl.strip()
+                if e.iconurl.startswith('file://'):
+                    path = '/%s' % md5(e.iconurl).hexdigest()
+                    new_url = '%s://%s%s' % ('https' if r.server.is_ssl else 'http', r.server.hostname, path)
+                    if path not in r.server.resources:
+                        r.server.resources[path] = e.iconurl[7:]
+                    e.iconurl = new_url
 
-    Message(MaltegoMessage(m)).write(sio)
-    v = sio.getvalue()
+        Message(MaltegoMessage(m)).write(sio)
+        v = sio.getvalue()
     # Get rid of those nasty unicode 32 characters
     r.wfile.write(sub(r'(&#\d{5};){2}', r'', v))
 
@@ -150,13 +161,14 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
 
 
     def dotransform(self, t):
-
         try:
             if 'Content-Length' not in self.headers:
                 self.send_error(500, 'What?')
                 return
 
-            xml = fromstring(self.rfile.read(int(self.headers['Content-Length']))).find('MaltegoTransformRequestMessage')
+            request_str = self.rfile.read(int(self.headers['Content-Length']))
+
+            xml = fromstring(request_str).find('MaltegoTransformRequestMessage')
 
             e = xml.find('Entities/Entity')
             etype = e.get('Type', '')
@@ -169,8 +181,12 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
             fields = dict([(f.get('Name', ''), f.text) for f in xml.findall('Entities/Entity/AdditionalFields/Field')])
             params = dict([(f.get('Name', ''), f.text) for f in xml.findall('TransformFields/Field')])
             for k, i in params.items():
-                config[k.replace('.', '/', 1)] = i
+                if '.' in k:
+                    config[k.replace('.', '/', 1)] = i
+                else:
+                    config['default/%s' % k] = i
             limits = xml.find('Limits').attrib
+
 
             msg = t[0](
                 type(
@@ -183,15 +199,13 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
                         'limits' : limits
                     }
                 )(),
-                MaltegoTransformResponseMessage()
+                request_str if hasattr(t[0], 'cmd') and callable(t[0].cmd) else MaltegoTransformResponseMessage()
             )
 
 
-            if isinstance(msg, MaltegoTransformResponseMessage):
+            if isinstance(msg, MaltegoTransformResponseMessage) or isinstance(msg, basestring):
                 message(msg, self)
                 return
-            elif isinstance(msg, basestring):
-                raise MaltegoException(msg)
             else:
                 raise MaltegoException('Could not resolve message type returned by transform.')
 

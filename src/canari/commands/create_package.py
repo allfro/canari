@@ -13,7 +13,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -48,7 +48,7 @@ def write_root(base, init):
 def write_resources(package_name, resources, init, values):
     write_template(
         path.join(resources, '__init__.py'),
-        init + generate_all('etc', 'images', 'maltego')
+        init + generate_all('etc', 'images', 'maltego', 'external')
     )
 
     write_template(
@@ -58,6 +58,11 @@ def write_resources(package_name, resources, init, values):
 
     write_template(
         path.join(resources, 'images', '__init__.py'),
+        init
+    )
+
+    write_template(
+        path.join(resources, 'external', '__init__.py'),
         init
     )
 
@@ -175,6 +180,7 @@ def run(args):
             resources,
             [resources, 'etc'],
             [resources, 'images'],
+            [resources, 'external'],
             [resources, 'maltego']
         )
     else:
