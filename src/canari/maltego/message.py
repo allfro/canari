@@ -129,7 +129,7 @@ class Field(MaltegoElement):
         super(Field, self).__init__(self.__class__.__name__)
         self.name = name
         self.matchingrule = kwargs.get('matchingrule', self.matchingrule)
-        self.displayname = kwargs.get('displayname', name.title())
+        self.displayname = kwargs.get('displayname', None)
         self.text = str(value) if not isinstance(value, basestring) else value
 
 
@@ -137,7 +137,7 @@ class StringEntityField(object):
 
     def __init__(self, name, displayname=None, decorator=None, matchingrule=MatchingRule.Strict):
         self.name = name
-        self.displayname = name.title() if displayname is None else displayname
+        self.displayname = displayname
         self.decorator = decorator
         self.matchingrule = matchingrule
 
@@ -168,9 +168,9 @@ class StringEntityField(object):
 
 class EnumEntityField(StringEntityField):
 
-    def __init__(self, name, displayname=None, choices=[], decorator=None):
+    def __init__(self, name, displayname=None, choices=[], decorator=None, matchingrule=MatchingRule.Strict):
         self.choices = [ str(c) if not isinstance(c, basestring) else c for c in choices ]
-        super(EnumEntityField, self).__init__(name, displayname, decorator)
+        super(EnumEntityField, self).__init__(name, displayname, decorator, matchingrule)
 
     def __set__(self, obj, val):
         val = str(val) if not isinstance(val, basestring) else val
@@ -234,12 +234,15 @@ class EntityFieldType(object):
 
 class EntityField(object):
 
-    def __init__(self, **kwargs):
+    def __init__(self, link=False, **kwargs):
         self.name = kwargs.get('name')
         if self.name is None:
             raise ValueError("Keyword argument 'name' is required.")
         self.property = kwargs.get('propname', sub('[^\w]+', '_', self.name))
-        self.displayname = kwargs.get('displayname', self.name.title())
+        if not link:
+            self.displayname = kwargs.get('displayname', self.name.title())
+        else:
+            self.displayname = kwargs.get('displayname', None)
         self.type = kwargs.get('type', EntityFieldType.String)
         self.required = kwargs.get('required', False)
         self.choices = kwargs.get('choices')
@@ -248,10 +251,25 @@ class EntityField(object):
 
     def __call__(self, cls):
         if self.type is EntityFieldType.Enum:
-            setattr(cls, self.property, self.type(self.name, self.displayname, self.choices, self.decorator))
+            setattr(
+                cls,
+                self.property,
+                self.type(self.name, self.displayname, self.choices, self.decorator, self.matchingrule)
+            )
         else:
-            setattr(cls, self.property, self.type(self.name, self.displayname, self.decorator))
+            setattr(
+                cls,
+                self.property,
+                self.type(self.name, self.displayname, self.decorator, self.matchingrule)
+            )
         return cls
+
+
+class EntityLinkField(EntityField):
+
+    def __init__(self, **kwargs):
+        kwargs['name'] = 'link#%s' % kwargs.get('name')
+        super(EntityLinkField, self).__init__(link=True, **kwargs)
 
 
 class UIMessageType(object):
@@ -277,6 +295,17 @@ class UIMessage(MaltegoElement):
 @XMLSubElement(name='DisplayInformation', propname='labels', type=XSSubElementType.List)
 @XMLSubElement(name='Value', propname='value')
 @XMLAttribute(name='Type', propname='type')
+@EntityField(name='notes#', propname='notes', link=True, matchingrule=MatchingRule.Loose)
+@EntityField(name='bookmark#', propname='bookmark', type=EntityFieldType.Integer, matchingrule=MatchingRule.Loose,
+    link=True)
+@EntityLinkField(name='maltego.link.label', propname='linklabel', matchingrule=MatchingRule.Loose)
+@EntityLinkField(name='maltego.link.style', propname='linkstyle', matchingrule=MatchingRule.Loose,
+    type=EntityFieldType.Integer)
+@EntityLinkField(name='maltego.link.show-label', propname='linkshowlabel', matchingrule=MatchingRule.Loose,
+    type=EntityFieldType.Enum, choices=[0, 1])
+@EntityLinkField(name='maltego.link.color', propname='linkcolor', matchingrule=MatchingRule.Loose)
+@EntityLinkField(name='maltego.link.thickness', propname='linkthickness', matchingrule=MatchingRule.Loose,
+    type=EntityFieldType.Integer)
 class Entity(MaltegoElement):
 
     namespace = 'maltego'
@@ -286,7 +315,7 @@ class Entity(MaltegoElement):
         super(Entity, self).__init__("Entity")
         type = kwargs.pop('type', None)
         if type is None:
-            self.type = '%s.%s' % (self.namespace, self.__class__.__name__ if self.name is None else self.name)
+            self.type = '%s.%s' % (self.namespace, (self.__class__.__name__ if self.name is None else self.name))
         else:
             self.type = type
         self.value = value
@@ -300,13 +329,11 @@ class Entity(MaltegoElement):
 
     def appendelement(self, other):
         if isinstance(other, Field):
-            display_name = other.get('DisplayName')
-            if display_name is None:
-                name = other.get('Name')
-                if name in self.fields.keys():
-                    other.set('DisplayName', self.fields[name])
-                else:
-                    other.set('DisplayName', name.title())
+#            display_name = other.get('DisplayName')
+#            if display_name is None:
+#                name = other.get('Name')
+#                if name in self.fields.keys():
+#                    other.set('DisplayName', self.fields[name])
             self.fields += other
         elif isinstance(other, Label):
             self.labels += other

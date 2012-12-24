@@ -208,7 +208,7 @@ def installmtz(package, prefix):
             category = xml.get('category')
             catdir = path.join(prefix, category)
             if not path.exists(catdir):
-                mkdir(catdir, mode=0755)
+                mkdir(catdir)
             p = path.join(catdir, path.basename(e))
             print 'Installing entity %s to %s...' % (e, p)
             with open(p, 'wb') as f:
@@ -250,7 +250,7 @@ def installmachines(package, prefix):
         if path.exists(n):
             e = XML(file(n).read())
         if not path.exists(prefix):
-            mkdir(prefix, 0755)
+            mkdir(prefix)
         package = '%s.resources.maltego' % package
         for m in filter(lambda x: x.endswith('.machine'), resource_listdir(package, '')):
             src = resource_filename(package, m)

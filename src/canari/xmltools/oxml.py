@@ -56,7 +56,9 @@ class XSStringAttribute(object):
         self.default = default
 
     def __get__(self, obj, objtype):
-        return obj.attrib.setdefault(self.name, self.default)
+        if self.default is not None:
+            return obj.attrib.setdefault(self.name, self.default)
+        return obj.attrib.get(self.name, None)
 
     def __set__(self, obj, val):
         if val is None:
@@ -88,7 +90,7 @@ class XSEnumAttribute(XSStringAttribute):
 class XSIntegerAttribute(XSStringAttribute):
 
     def __get__(self, obj, objtype):
-        return int(super(XSIntegerAttribute, self).__get__(obj, objtype))
+        return int(super(XSIntegerAttribute, self).__get__(obj, objtype) or 0)
 
     def __set__(self, obj, val):
         if not isinstance(val, Number):
@@ -113,7 +115,7 @@ class XSBooleanAttribute(XSStringAttribute):
 class XSFloatAttribute(XSStringAttribute):
 
     def __get__(self, obj, objtype):
-        return float(super(XSFloatAttribute, self).__get__(obj, objtype))
+        return float(super(XSFloatAttribute, self).__get__(obj, objtype) or 0)
 
     def __set__(self, obj, val):
         if not isinstance(val, Number):
@@ -124,7 +126,7 @@ class XSFloatAttribute(XSStringAttribute):
 class XSLongAttribute(XSStringAttribute):
 
     def __get__(self, obj, objtype):
-        return long(super(XSLongAttribute, self).__get__(obj, objtype))
+        return long(super(XSLongAttribute, self).__get__(obj, objtype) or 0)
 
     def __set__(self, obj, val):
         if not isinstance(val, Number):
@@ -218,7 +220,7 @@ class XSEnumSubElement(XSStringSubElement):
 class XSIntegerSubElement(XSStringSubElement):
 
     def __get__(self, obj, objtype):
-        return int(super(XSIntegerSubElement, self).__get__(obj, objtype))
+        return int(super(XSIntegerSubElement, self).__get__(obj, objtype) or 0)
 
     def __set__(self, obj, val):
         if not isinstance(val, Number):
@@ -243,7 +245,7 @@ class XSBooleanSubElement(XSStringSubElement):
 class XSFloatSubElement(XSStringSubElement):
 
     def __get__(self, obj, objtype):
-        return float(super(XSFloatSubElement, self).__get__(obj, objtype))
+        return float(super(XSFloatSubElement, self).__get__(obj, objtype) or 0)
 
     def __set__(self, obj, val):
         if not isinstance(val, Number):
@@ -254,7 +256,7 @@ class XSFloatSubElement(XSStringSubElement):
 class XSLongSubElement(XSStringSubElement):
 
     def __get__(self, obj, objtype):
-        return long(super(XSLongSubElement, self).__get__(obj, objtype))
+        return long(super(XSLongSubElement, self).__get__(obj, objtype) or 0)
 
     def __set__(self, obj, val):
         if not isinstance(val, Number):

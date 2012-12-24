@@ -5,7 +5,7 @@ from message import MaltegoMessage, Message, MaltegoTransformExceptionMessage, M
 from signal import signal, SIGTERM, SIGINT
 from sys import exit, argv, stderr, stdout
 from cStringIO import StringIO
-from re import split, sub
+from re import split, sub, search
 
 
 __author__ = 'Nadeem Douba'
@@ -59,8 +59,8 @@ def parseargs(args=argv):
         exit(-1)
 
     arg_script = args[1]
-    arg_field = args[-1] if '=' in args[-1] else None
-    arg_value = args[-1] if arg_field is None else args[-2]
+    arg_field = args[-1] if search(r'(?<=[^\\])=', args[-1]) is not None else None
+    arg_value = (args[-1] if arg_field is None else args[-2]).replace('\=', '=')
     arg_param = []
 
     if arg_field is None and len(args) > 3:
@@ -72,7 +72,15 @@ def parseargs(args=argv):
     if arg_field is not None:
         fs = split(r'(?<=[^\\])#', arg_field)
         if fs is not None:
-            fields = dict(map(lambda x: x.split('=', 1), fs))
+            fields = dict(
+                map(
+                    lambda x: [
+                    c.replace('\#', '#').replace('\=', '=').replace('\\\\', '\\')
+                    for c in split(r'(?<=[^\\])=', x, 1)
+                    ],
+                    fs
+                )
+            )
 
     return arg_script, arg_param, arg_value, fields
 
