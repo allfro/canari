@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ..xmltools.oxml import ElementTree, Element
+from canari.xmltools.oxml import ElementTree, Element
 
 from cStringIO import StringIO
 from copy import deepcopy

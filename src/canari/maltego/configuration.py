@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ..xmltools.oxml import XMLAttribute, XSAttributeType, XMLSubElement, XSSubElementType
+from canari.xmltools.oxml import XMLAttribute, XSAttributeType, XMLSubElement, XSSubElementType
 from message import MaltegoElement
 
 

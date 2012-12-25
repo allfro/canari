@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from common import detect_settings_dir, cmd_name
-from ..maltego.entities import Entity
+from canari.maltego.entities import Entity
 
 from xml.etree.cElementTree import XML
 from argparse import ArgumentParser

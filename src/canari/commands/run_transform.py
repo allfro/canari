@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-from ..maltego.message import MaltegoException, MaltegoTransformResponseMessage
+from canari.maltego.message import MaltegoException, MaltegoTransformResponseMessage
 from common import cmd_name, import_transform, fix_binpath, get_bin_dir
-from ..maltego.utils import onterminate, parseargs, croak, message
+from canari.maltego.utils import onterminate, parseargs, croak, message
 
 from os import execvp, geteuid, name, path
 from argparse import ArgumentParser
 from traceback import format_exc
-from ..config import config
+from canari.config import config
 from sys import argv
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ..xmltools.oxml import *
+from canari.xmltools.oxml import *
 
 from numbers import Number
 from re import sub

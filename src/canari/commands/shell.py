@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 from common import console_message, cmd_name, highlight, fix_pypath, fix_binpath, import_package
-from ..maltego.message import MaltegoTransformResponseMessage
-from ..config import config
+from canari.maltego.message import MaltegoTransformResponseMessage
+from canari.config import config
 
 from os import path, name, geteuid, execvp
 from code import InteractiveConsole

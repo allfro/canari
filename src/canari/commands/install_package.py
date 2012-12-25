@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from ..maltego.configuration import  (MaltegoTransform, CmdCwdTransformProperty, CmdDbgTransformProperty,
+from canari.maltego.configuration import  (MaltegoTransform, CmdCwdTransformProperty, CmdDbgTransformProperty,
                                CmdLineTransformProperty, CmdParmTransformProperty, InputConstraint, TransformSet,
                                TransformSettings, CmdCwdTransformPropertySetting, CmdDbgTransformPropertySetting,
                                CmdLineTransformPropertySetting, CmdParmTransformPropertySetting)
 from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir, import_transform, import_package, fix_etree
-from ..maltego.message import ElementTree
+from canari.maltego.message import ElementTree
 
 from pkg_resources import resource_filename, resource_listdir
 from xml.etree.cElementTree import XML, SubElement

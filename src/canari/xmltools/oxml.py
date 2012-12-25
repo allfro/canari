@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 from numbers import Number
 from copy import deepcopy
 from pickle import dumps
-from sys import stdout, version_info
+from sys import stdout
 from re import sub
 
 __author__ = 'Nadeem Douba'
@@ -307,7 +307,7 @@ class XMLSubElement(object):
 
 
 class ElementTree(ET.ElementTree):
-    if (2, 6) <= version_info < (2, 7):
+    if hasattr(ET.ElementTree, '_write'):
         def _write(self, file, node, encoding, namespaces):
             if node.tag is 'CDATA':
                 if node.text is not None:
@@ -319,7 +319,7 @@ class ElementTree(ET.ElementTree):
     def write(self, file=stdout, encoding='us-ascii'):
         _eto.write(self, file, encoding)
 
-if version_info >= (2, 7):
+if hasattr(ET, '_serialize_xml'):
     _orig_serialize_xml = ET._serialize_xml
 
     def _serialize_xml(write, elem, encoding, qnames, namespaces):

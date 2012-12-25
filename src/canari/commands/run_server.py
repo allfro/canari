@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from ..maltego.message import (MaltegoTransformResponseMessage, MaltegoException,
+from canari.maltego.message import (MaltegoTransformResponseMessage, MaltegoException,
                                MaltegoTransformExceptionMessage, MaltegoMessage, Message)
 from common import cmd_name, import_transform, fix_binpath, fix_pypath, import_package
-from ..config import config
+from canari.config import config
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from os import execvp, geteuid, name, path, fork
