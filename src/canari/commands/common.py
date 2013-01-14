@@ -2,7 +2,7 @@
 
 from canari.config import CanariConfigParser
 
-from os import path, listdir, sep, environ, mkdir, pathsep, getcwd
+from os import path, listdir, sep, environ, mkdir, pathsep, getcwd, walk
 from pkg_resources import resource_filename
 from distutils.dist import Distribution
 from distutils.command.install import install
@@ -91,7 +91,7 @@ def write_template(fname, data):
 
 
 def generate_all(*args):
-    return "\n__all__ = [\n    '%s'\n]" % "',\n    '".join(args)
+    return "\n\n__all__ = [\n    '%s'\n]" % "',\n    '".join(args)
 
 
 def build_skeleton(*args):
@@ -172,9 +172,10 @@ def console_message(msg, tab=-1):
 
 def init_pkg():
 
-    conf = '.canari'
+    root = project_root()
 
-    for i in range(0, 5):
+    if root is not None:
+        conf = path.join(root, '.canari')
         if path.exists(conf):
             c = CanariConfigParser()
             c.read(conf)
@@ -183,10 +184,8 @@ def init_pkg():
                 'email' : c['metadata/email'],
                 'maintainer' : c['metadata/maintainer'],
                 'project' : c['metadata/project'],
-                'year' : datetime.now().year,
-                'dir' : getcwd()
+                'year' : datetime.now().year
             }
-        conf = '..%s%s' % (sep, conf)
 
     return {
         'author' : '',
@@ -197,4 +196,49 @@ def init_pkg():
     }
 
 
+def project_root():
 
+    marker = '.canari'
+
+    for i in range(0, 5):
+        if path.exists(marker):
+            return path.dirname(path.realpath(marker))
+        marker = '..%s%s' % (sep, marker)
+
+    print 'Unable to determine project root.'
+    exit(-1)
+
+
+def project_tree():
+
+    root = project_root()
+
+    tree = dict(
+        root=root,
+        src=None,
+        pkg=None,
+        resources=None,
+        transforms=None
+    )
+
+    for base, dirs, files in walk(root):
+        if base.endswith('src'):
+            tree['src'] = base
+        elif 'resources' in dirs:
+            tree['pkg'] = base
+        elif base.endswith('resources'):
+            tree['resources'] = base
+        elif base.endswith('transforms'):
+            tree['transforms'] = base
+
+    return tree
+
+
+def parse_bool(ans, default='y'):
+
+    while True:
+        ans = raw_input(ans).lower() or default
+        if ans.startswith('y'):
+            return True
+        elif ans.startswith('n'):
+            return False

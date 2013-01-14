@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-from common import write_template, read_template, cmd_name, init_pkg
-
+from common import write_template, read_template, cmd_name, init_pkg, project_tree
 
 from argparse import ArgumentParser
-from os import path, getcwd
+from os import path
 from re import sub
 
 
@@ -35,7 +34,7 @@ parser.add_argument(
     '--transform-dir',
     metavar='<dir>',
     help='The directory in which you wish to create the transform.',
-    default=getcwd()
+    default=None
 )
 
 
@@ -49,6 +48,8 @@ def description():
 
 def parse_args(args):
     args = parser.parse_args(args)
+    if args.transform_dir is None:
+        args.transform_dir= project_tree()['transforms']
     return args
 
 

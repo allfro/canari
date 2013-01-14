@@ -30,7 +30,7 @@ parser = ArgumentParser(
 parser.add_argument(
     'transform',
     metavar='<transform>',
-    help='The name of the transform you wish to run (e.g. canari.transforms.nmapfastscan).'
+    help='The name of the transform you wish to run (e.g. sploitego.transforms.nmapfastscan).'
 )
 
 parser.add_argument(

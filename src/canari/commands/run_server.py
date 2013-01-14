@@ -82,7 +82,7 @@ parser.add_argument(
 parser.add_argument(
     '--hostname',
     metavar='[hostname]',
-    default=getfqdn(),
+    default=None,
     help='The hostname of this transform server.'
 )
 
@@ -276,10 +276,16 @@ class AsyncMaltegoHTTPServer(ThreadingMixIn, MaltegoHTTPServer):
     pass
 
 
+def parse_args(args):
+    args = parser.parse_args(args)
+    if args.hostname is None:
+        args.hostname = getfqdn()
+    return args
+
 
 def run(args):
 
-    opts = parser.parse_args(args)
+    opts = parse_args(args)
 
     fix_pypath()
 

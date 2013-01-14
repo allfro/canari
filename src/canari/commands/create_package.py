@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from common import read_template, write_template, generate_all, build_skeleton, cmd_name
+from common import read_template, write_template, generate_all, build_skeleton, cmd_name, parse_bool
 
 from argparse import ArgumentParser
 from datetime import datetime
@@ -112,16 +112,6 @@ def help():
 
 def description():
     return parser.description
-
-
-def parse_bool(ans, default='y'):
-
-    while True:
-        ans = raw_input(ans).lower() or default
-        if ans.startswith('y'):
-            return True
-        elif ans.startswith('n'):
-            return False
 
 
 def ask_user(defaults):

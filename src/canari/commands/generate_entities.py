@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from common import detect_settings_dir, cmd_name
+from common import detect_settings_dir, cmd_name, project_tree, parse_bool
 from canari.maltego.entities import Entity
 
 from xml.etree.cElementTree import XML
 from argparse import ArgumentParser
-from os import walk, path as ospath
+from os import walk, path
 from zipfile import ZipFile
 from imp import load_source
 from re import sub
@@ -36,15 +36,15 @@ __status__ = 'Development'
 
 parser = ArgumentParser(
     description='Converts Maltego entity definition files to Canari python classes. Excludes Maltego built-in entities.',
-    usage='canari %s <outfile> [options]' % cmd_name(__name__)
+    usage='canari %s [output file] [options]' % cmd_name(__name__)
 )
 
 
 parser.add_argument(
     'outfile',
-    metavar='<outfile>',
+    metavar='[output file]',
     help='Which file to write the output to.',
-    default='entities.py',
+    default=None,
     nargs='?'
 )
 
@@ -104,7 +104,10 @@ def description():
 
 
 def parse_args(args):
-    return parser.parse_args(args)
+    args = parser.parse_args(args)
+    if args.outfile is None:
+        args.outfile = path.join(project_tree()['transforms'], 'common', 'entities.py')
+    return args
 
 
 def normalize_fn(fn):
@@ -133,7 +136,7 @@ class DirFile(object):
     def namelist(self):
         l = []
         for base, dirs, files in walk(self.path):
-            l.extend([ ospath.join(base, f) for f in files ])
+            l.extend([ path.join(base, f) for f in files ])
         return l
 
     def open(self, fname):
@@ -144,8 +147,13 @@ def run(args):
 
     opts = parse_args(args)
 
+    if path.exists(opts.outfile) and not opts.append and not \
+       parse_bool('%s already exists. Are you sure you want to overwrite it? [y/N]: ' % repr(opts.outfile), default='n'):
+        exit(-1)
+
+
     ar = DirFile(
-        ospath.join(detect_settings_dir(), 'config', 'Maltego', 'Entities')
+        path.join(detect_settings_dir(), 'config', 'Maltego', 'Entities')
     ) if opts.mtz_file is None else ZipFile(opts.mtz_file)
 
     entities = filter(lambda x: x.endswith('.entity'), ar.namelist())
@@ -160,6 +168,7 @@ def run(args):
             if i.type.endswith('Entity'):
                 nses[i.namespace] = i.__class__.__name__
 
+    print 'Generating %s...' % repr(opts.outfile)
     fd = open(opts.outfile, 'ab' if opts.append else 'wb')
 
     if opts.append:
@@ -205,3 +214,4 @@ def run(args):
         fd.write('class %s(%s):\n    pass\n\n\n' % (classname, base_classname))
 
     fd.close()
+    print 'done.'

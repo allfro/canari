@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from common import cmd_name
+from common import cmd_name, project_tree
 
-from os import path, getcwd, rename
 from argparse import ArgumentParser
+from os import path, rename
 from re import sub
 
 
@@ -40,7 +40,7 @@ parser.add_argument(
     '--transform-dir',
     metavar='<dir>',
     help='The directory from which you wish to rename the transform.',
-    default=getcwd()
+    default=None
 )
 
 
@@ -54,6 +54,8 @@ def description():
 
 def parse_args(args):
     args = parser.parse_args(args)
+    if args.transform_dir is None:
+        args.transform_dir = project_tree()['transforms']
     return args
 
 

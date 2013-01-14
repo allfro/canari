@@ -23,6 +23,7 @@ parser = ArgumentParser(
     description='Shows help related to various canari commands',
     usage='canari %s <command>' % cmd_name(__name__)
 )
+
 parser.add_argument(
     'command',
     metavar='<command>',
