@@ -1,2 +1,2 @@
 include *.md
-recursive-include src *.py *.conf *.plate
+recursive-include src *.py *.conf *.plate *.bat
