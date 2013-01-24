@@ -1,24 +1,70 @@
 #!/usr/bin/env python
 
-from os import path, name, stat
+import os
+
 from tempfile import gettempdir
 from sys import maxint
 from time import time
 
-if name == 'nt':
-    from win32con import LOCKFILE_EXCLUSIVE_LOCK as LOCK_EX, LOCKFILE_FAIL_IMMEDIATELY as LOCK_NB
-    from win32file import _get_osfhandle, LockFileEx, UnlockFileEx
-    from pywintypes import OVERLAPPED, error as WinIOError
+if os.name == 'nt':
+    import msvcrt
+    from ctypes import *
+    from ctypes.wintypes import BOOL, DWORD, HANDLE
+
+    LOCK_SH = 0    # the default
+    LOCK_NB = 0x1  # LOCKFILE_FAIL_IMMEDIATELY
+    LOCK_EX = 0x2  # LOCKFILE_EXCLUSIVE_LOCK
+
+    # --- the code is taken from pyserial project ---
+    #
+    # detect size of ULONG_PTR
+    def is_64bit():
+        return sizeof(c_ulong) != sizeof(c_void_p)
+    if is_64bit():
+        ULONG_PTR = c_int64
+    else:
+        ULONG_PTR = c_ulong
+    PVOID = c_void_p
+
+    # --- Union inside Structure by stackoverflow:3480240 ---
+    class _OFFSET(Structure):
+        _fields_ = [
+            ('Offset', DWORD),
+            ('OffsetHigh', DWORD)]
+
+    class _OFFSET_UNION(Union):
+        _anonymous_ = ['_offset']
+        _fields_ = [
+            ('_offset', _OFFSET),
+            ('Pointer', PVOID)]
+
+    class OVERLAPPED(Structure):
+        _anonymous_ = ['_offset_union']
+        _fields_ = [
+            ('Internal', ULONG_PTR),
+            ('InternalHigh', ULONG_PTR),
+            ('_offset_union', _OFFSET_UNION),
+            ('hEvent', HANDLE)]
+
+    LPOVERLAPPED = POINTER(OVERLAPPED)
+
+    # --- Define function prototypes for extra safety ---
+    LockFileEx = windll.kernel32.LockFileEx
+    LockFileEx.restype = BOOL
+    LockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, DWORD, LPOVERLAPPED]
+    UnlockFileEx = windll.kernel32.UnlockFileEx
+    UnlockFileEx.restype = BOOL
+    UnlockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, LPOVERLAPPED]
 else:
     from fcntl import flock, LOCK_EX, LOCK_NB, LOCK_SH, LOCK_UN
 
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
-__credits__ = []
+__credits__ = [ 'Jonathan Feinberg' ]
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -33,24 +79,20 @@ __all__ = [
 ]
 
 
-if name == 'nt':
-    LOCK_SH = 0
-    LOCK_UN = 0
-    __overlapped = OVERLAPPED()
-
+if os.name == 'nt':
     def flock(file, flags):
-        hfile = _get_osfhandle(file.fileno())
-        try:
-            if flags & LOCK_UN:
-                UnlockFileEx(hfile, 0, -0x10000, __overlapped)
-            else:
-                LockFileEx(hfile, flags, 0, -0x10000, __overlapped)
-        except WinIOError, exc:
-            raise IOError('[Errno %d] %s' % (exc[0], exc[2]))
+        hfile = msvcrt.get_osfhandle(file.fileno())
+        overlapped = OVERLAPPED()
+        if flags & LOCK_UN and UnlockFileEx(hfile, 0, 0, 0xFFFF0000, byref(overlapped)):
+            return
+        elif flags & (LOCK_EX | LOCK_NB | LOCK_SH) and \
+             LockFileEx(hfile, flags, 0, 0, 0xFFFF0000, byref(overlapped)):
+            return
+        raise IOError(GetLastError())
 
 
 def cookie(name):
-    return path.join(gettempdir(), name)
+    return os.path.join(gettempdir(), name)
 
 
 class fsemaphore(file):
@@ -90,16 +132,16 @@ class fmutex(fsemaphore):
 class ufile(file):
 
     def __init__(self, name):
-        if path.exists(name):
-            p, n = path.split(name)
-            n, e = path.splitext(n)
+        if os.path.exists(name):
+            p, n = os.path.split(name)
+            n, e = os.path.splitext(n)
 
             for i in xrange(2, maxint):
-                name = path.join(p, '%s(%d)%s') % (n, i, e)
-                if not path.exists(name):
+                name = os.path.join(p, '%s(%d)%s') % (n, i, e)
+                if not os.path.exists(name):
                     break
         super(ufile, self).__init__(name, mode='wb')
 
 
 def age(path):
-    return time() - stat(path).st_mtime
+    return time() - os.stat(path).st_mtime

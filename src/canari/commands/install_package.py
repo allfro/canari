@@ -1,5 +1,15 @@
 #!/usr/bin/env python
 
+import os
+import sys
+
+from pkg_resources import resource_filename, resource_listdir
+from xml.etree.cElementTree import XML, SubElement
+from argparse import ArgumentParser
+from re import findall, sub
+from zipfile import ZipFile
+from string import Template
+
 from canari.maltego.configuration import  (MaltegoTransform, CmdCwdTransformProperty, CmdDbgTransformProperty,
                                CmdLineTransformProperty, CmdParmTransformProperty, InputConstraint, TransformSet,
                                TransformSettings, CmdCwdTransformPropertySetting, CmdDbgTransformPropertySetting,
@@ -7,23 +17,13 @@ from canari.maltego.configuration import  (MaltegoTransform, CmdCwdTransformProp
 from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir, import_transform, import_package, fix_etree
 from canari.maltego.message import ElementTree
 
-from pkg_resources import resource_filename, resource_listdir
-from xml.etree.cElementTree import XML, SubElement
-from os import path, mkdir, chdir, getcwd, name
-from argparse import ArgumentParser
-from re import findall, sub
-from zipfile import ZipFile
-from string import Template
-from sys import stderr
-
-
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -47,7 +47,7 @@ parser.add_argument(
     '-w',
     '--working-dir',
     metavar='[working dir]',
-    default=getcwd(),
+    default=os.getcwd(),
     help='the path that will be used as the working directory for the transforms being installed (default: current working directory)'
 )
 parser.add_argument(
@@ -85,17 +85,17 @@ def parse_args(args):
 # Logic to install transforms
 def install_transform(module, name, author, spec, prefix, working_dir):
 
-    installdir = path.join(prefix, 'config', 'Maltego', 'TransformRepositories', 'Local')
+    installdir = os.path.join(prefix, 'config', 'Maltego', 'TransformRepositories', 'Local')
 
-    if not path.exists(installdir):
-        mkdir(installdir)
+    if not os.path.exists(installdir):
+        os.mkdir(installdir)
 
-    setsdir = path.join(prefix, 'config', 'Maltego', 'TransformSets')
+    setsdir = os.path.join(prefix, 'config', 'Maltego', 'TransformSets')
 
     for i,n in enumerate(spec.uuids):
 
         if n in transforms:
-            stderr.write('WARNING: Previous declaration of %s in transform %s. Overwriting...' % (n, module))
+            sys.stderr.write('WARNING: Previous declaration of %s in transform %s. Overwriting...' % (n, module))
         else:
             print ('Installing transform %s from %s...' % (n, module))
             transforms[n] = module
@@ -104,10 +104,10 @@ def install_transform(module, name, author, spec, prefix, working_dir):
 
         sets = None
         if spec.inputs[i][0] is not None:
-            setdir = path.join(setsdir, spec.inputs[i][0])
-            if not path.exists(setdir):
-                mkdir(setdir)
-            open(path.join(setdir, n), 'w').close()
+            setdir = os.path.join(setsdir, spec.inputs[i][0])
+            if not os.path.exists(setdir):
+                os.mkdir(setdir)
+            open(os.path.join(setdir, n), 'w').close()
             sets=TransformSet(spec.inputs[i][0])
 
         transform = MaltegoTransform(
@@ -127,19 +127,22 @@ def install_transform(module, name, author, spec, prefix, working_dir):
         transform.sets
 
 
-        ElementTree(transform).write(path.join(installdir, '%s.transform' % n))
+        ElementTree(transform).write(os.path.join(installdir, '%s.transform' % n))
 
         transformsettings = TransformSettings(properties=[
-            CmdLineTransformPropertySetting(path.join(get_bin_dir(), 'dispatcher')),
+            CmdLineTransformPropertySetting(
+                os.path.join(get_bin_dir(),
+                'dispatcher.bat' if os.name == 'nt' else 'dispatcher')
+            ),
             CmdParmTransformPropertySetting(name),
             CmdCwdTransformPropertySetting(working_dir),
             CmdDbgTransformPropertySetting(spec.debug)
         ])
-        ElementTree(transformsettings).write(path.join(installdir, '%s.transformsettings' % n))
+        ElementTree(transformsettings).write(os.path.join(installdir, '%s.transformsettings' % n))
 
 
 def writeconf(sf, df, **kwargs):
-    if not path.exists(df):
+    if not os.path.exists(df):
         print ('Writing %s to %s' % (sf, df))
         with file(df, mode='wb') as w:
             if 'sub' in kwargs and kwargs['sub']:
@@ -160,8 +163,8 @@ def writeconf(sf, df, **kwargs):
 
 
 def updateconf(c, f):
-    ld = getcwd()
-    chdir(path.dirname(f))
+    ld = os.getcwd()
+    os.chdir(os.path.dirname(f))
 
     import canari.config as config
     reload(config)
@@ -173,32 +176,32 @@ def updateconf(c, f):
             s = r.read()
         with file(f, mode='wb') as w:
             w.write(sub(r'configs\s*\=', 'configs = %s,' % c, s))
-    chdir(ld)
+    os.chdir(ld)
 
 
 def installconf(opts, args):
     src = resource_filename('canari.resources.template', 'canari.plate')
     writeconf(
         src,
-        path.join(opts.working_dir, 'canari.conf'),
+        os.path.join(opts.working_dir, 'canari.conf'),
         sub=True,
         command=' '.join(['canari install'] + args),
         config=('%s.conf' % opts.package) if opts.package != 'canari' else '',
-        path='${PATH},/usr/local/bin,/opt/local/bin' if name == 'posix' else ''
+        path='${PATH},/usr/local/bin,/opt/local/bin' if os.name == 'posix' else ''
     )
 
     if opts.package != 'canari':
         src = resource_filename('%s.resources.etc' % opts.package, '%s.conf' % opts.package)
-        writeconf(src, path.join(opts.working_dir, '%s.conf' % opts.package), sub=False)
-        updateconf('%s.conf' % opts.package, path.join(opts.working_dir, 'canari.conf'))
+        writeconf(src, os.path.join(opts.working_dir, '%s.conf' % opts.package), sub=False)
+        updateconf('%s.conf' % opts.package, os.path.join(opts.working_dir, 'canari.conf'))
 
 
 def installmtz(package, prefix):
     try:
         src = resource_filename('%s.resources.maltego' % package, 'entities.mtz')
-        if not path.exists(src):
+        if not os.path.exists(src):
             return
-        prefix = path.join(prefix, 'config', 'Maltego', 'Entities')
+        prefix = os.path.join(prefix, 'config', 'Maltego', 'Entities')
         z = ZipFile(src)
         entities = filter(lambda x: x.endswith('.entity'), z.namelist())
 
@@ -206,10 +209,10 @@ def installmtz(package, prefix):
             data = z.open(e).read()
             xml = XML(data)
             category = xml.get('category')
-            catdir = path.join(prefix, category)
-            if not path.exists(catdir):
-                mkdir(catdir)
-            p = path.join(catdir, path.basename(e))
+            catdir = os.path.join(prefix, category)
+            if not os.path.exists(catdir):
+                os.mkdir(catdir)
+            p = os.path.join(catdir, os.path.basename(e))
             print 'Installing entity %s to %s...' % (e, p)
             with open(p, 'wb') as f:
                 f.write(data)
@@ -244,17 +247,17 @@ def installnbattr(xml, src, dst):
 
 def installmachines(package, prefix):
     try:
-        prefix = path.join(prefix, 'config', 'Maltego', 'Machines')
-        n = path.join(prefix, '.nbattrs')
+        prefix = os.path.join(prefix, 'config', 'Maltego', 'Machines')
+        n = os.path.join(prefix, '.nbattrs')
         e = XML('<attributes version="1.0"/>')
-        if path.exists(n):
+        if os.path.exists(n):
             e = XML(file(n).read())
-        if not path.exists(prefix):
-            mkdir(prefix)
+        if not os.path.exists(prefix):
+            os.mkdir(prefix)
         package = '%s.resources.maltego' % package
         for m in filter(lambda x: x.endswith('.machine'), resource_listdir(package, '')):
             src = resource_filename(package, m)
-            dst = path.join(prefix, m)
+            dst = os.path.join(prefix, m)
             print 'Installing machine %s to %s...' % (src, dst)
             with open(dst, 'wb') as f:
                 data = file(src).read()

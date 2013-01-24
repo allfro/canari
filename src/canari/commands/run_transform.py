@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
+import os
+import sys
+
+from argparse import ArgumentParser
+from traceback import format_exc
+
 from canari.maltego.message import MaltegoException, MaltegoTransformResponseMessage
 from common import cmd_name, import_transform, fix_binpath, get_bin_dir
 from canari.maltego.utils import onterminate, parseargs, croak, message
-
-from os import execvp, geteuid, name, path
-from argparse import ArgumentParser
-from traceback import format_exc
 from canari.config import config
-from sys import argv
 
 
 __author__ = 'Nadeem Douba'
@@ -16,7 +17,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -65,13 +66,13 @@ def run(args):
     [transform, params, value, fields] = parseargs(['canari %s' % cmd_name(__name__)] + args)
 
     m = None
-    pysudo = path.join(get_bin_dir(), 'pysudo')
+    pysudo = os.path.join(get_bin_dir(), 'pysudo')
 
     fix_binpath(config['default/path'])
     try:
         m = import_transform(transform)
 
-        if name == 'posix' and hasattr(m.dotransform, 'privileged') and geteuid():
+        if os.name == 'posix' and hasattr(m.dotransform, 'privileged') and os.geteuid():
 # Keep it for another day
 #            if platform == 'darwin':
 #                execvp(
@@ -81,7 +82,7 @@ def run(args):
 #            if sys.platform.startswith('linux') and path.exists("/usr/bin/gksudo"):
 #                execvp('/usr/bin/gksudo', ['/usr/bin/gksudo'] + list(sys.argv))
 #            else:
-            execvp(pysudo, [pysudo] + list(argv))
+            os.execvp(pysudo, [pysudo] + list(sys.argv))
             exit(-1)
 
         if hasattr(m, 'onterminate'):

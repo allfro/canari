@@ -1,27 +1,29 @@
 #!/usr/bin/env python
 
+import os
 from setuptools import setup, find_packages
-from os import name
 
 
 scripts = [
     'src/scripts/canari',
-    'src/scripts/pysudo',
     'src/scripts/dispatcher',
 ]
+
+if os.name == 'posix':
+    scripts.append('src/scripts/pysudo')
 
 extras = [
     'readline'
 ]
 
-if name == 'nt':
+if os.name == 'nt':
     scripts += ['%s.bat' % s for s in scripts]
 
 
 setup(
     name='canari',
     author='Nadeem Douba',
-    version='0.5',
+    version='0.6',
     author_email='ndouba@gmail.com',
     description='Rapid transform development and transform execution framework for Maltego.',
     license='GPL',

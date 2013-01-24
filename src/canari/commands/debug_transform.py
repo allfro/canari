@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
+import os
+import sys
+
+from argparse import ArgumentParser
+from traceback import format_exc
+
 from canari.maltego.message import MaltegoException, MaltegoTransformResponseMessage
 from common import croak, import_transform, cmd_name, console_message, fix_binpath
 from canari.maltego.utils import onterminate, parseargs
 from canari.config import config
-
-from os import execvp, geteuid, name
-from argparse import ArgumentParser
-from traceback import format_exc
-from sys import argv
 
 
 __author__ = 'Nadeem Douba'
@@ -16,7 +17,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -69,8 +70,8 @@ def run(args):
     try:
         m = import_transform(transform)
 
-        if name == 'posix' and hasattr(m.dotransform, 'privileged') and geteuid():
-            execvp('sudo', ['sudo'] + list(argv))
+        if os.name == 'posix' and hasattr(m.dotransform, 'privileged') and os.geteuid():
+            os.execvp('sudo', ['sudo'] + list(sys.argv))
             exit(-1)
 
         if hasattr(m, 'onterminate'):

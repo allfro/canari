@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 
-from canari.maltego.message import (MaltegoTransformResponseMessage, MaltegoException,
-                               MaltegoTransformExceptionMessage, MaltegoMessage, Message)
-from common import cmd_name, import_transform, fix_binpath, fix_pypath, import_package
-from canari.config import config
+import os
+import sys
 
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-from os import execvp, geteuid, name, path, fork
 from xml.etree.cElementTree import fromstring
 from SocketServer import ThreadingMixIn
 from ssl import wrap_socket, CERT_NONE
@@ -16,8 +13,11 @@ from socket import getfqdn
 from urlparse import urlsplit
 from re import sub, findall
 from hashlib import md5
-from sys import argv
 
+from canari.maltego.message import (MaltegoTransformResponseMessage, MaltegoException,
+                               MaltegoTransformExceptionMessage, MaltegoMessage, Message)
+from common import cmd_name, import_transform, fix_binpath, fix_pypath, import_package
+from canari.config import config
 
 
 __author__ = 'Nadeem Douba'
@@ -292,9 +292,9 @@ def run(args):
     if opts.port == -1:
         opts.port = 443 if not opts.disable_ssl else 80
 
-    if name == 'posix' and geteuid() and (opts.port <= 1024 or opts.enable_privileged):
+    if os.name == 'posix' and os.geteuid() and (opts.port <= 1024 or opts.enable_privileged):
         print ('You must run this server as root to continue...')
-        execvp('sudo', ['sudo'] + list(argv))
+        os.execvp('sudo', ['sudo'] + list(sys.argv))
 
     fix_binpath(config['default/path'])
 
@@ -321,7 +321,7 @@ def run(args):
                 if not hasattr(m2, 'dotransform'):
                     continue
 
-                if name == 'posix' and hasattr(m2.dotransform, 'privileged') and (geteuid() or not opts.enable_privileged):
+                if os.name == 'posix' and hasattr(m2.dotransform, 'privileged') and (os.geteuid() or not opts.enable_privileged):
                     continue
 
                 if hasattr(m2.dotransform, 'remote') and m2.dotransform.remote:
@@ -348,7 +348,7 @@ def run(args):
     server_address = (opts.listen_on, opts.port)
 
     if not opts.disable_ssl:
-        if not path.exists(opts.cert):
+        if not os.path.exists(opts.cert):
             print ('The certificate file %s does not exist. Please create a PEM file...' % repr(opts.cert))
             exit(-1)
         print ('Making it secure (1337)...')
@@ -358,7 +358,7 @@ def run(args):
         print ('Really? Over regular HTTP? What a shame...')
         httpd = AsyncMaltegoHTTPServer(server_address=server_address, transforms=transforms, hostname=opts.hostname)
 
-    if not opts.daemon or not fork():
+    if not opts.daemon or not os.fork():
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:

@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
-from common import console_message, cmd_name, highlight, fix_pypath, fix_binpath, import_package
-from canari.maltego.message import MaltegoTransformResponseMessage
-from canari.config import config
+import os
+import sys
 
-from os import path, name, geteuid, execvp
 from code import InteractiveConsole
 from argparse import ArgumentParser
 from atexit import register
-from sys import argv
-import readline
+
+from common import console_message, cmd_name, highlight, fix_pypath, fix_binpath, import_package
+from canari.maltego.message import MaltegoTransformResponseMessage
+from canari.config import config
 
 
 __author__ = 'Nadeem Douba'
@@ -17,7 +17,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -47,12 +47,12 @@ class ShellCommand(object):
 
     def __init__(self, mod):
         self.mod = mod
-        self.sudoargs = ['sudo'] + list(argv)
+        self.sudoargs = ['sudo'] + list(sys.argv)
 
     def __call__(self, value, *args, **kwargs):
-        if name == 'posix' and hasattr(self.mod.dotransform, 'privileged') and geteuid():
+        if os.name == 'posix' and hasattr(self.mod.dotransform, 'privileged') and os.geteuid():
             print highlight("Need to be root to run this transform... sudo'ing...", 'green', True)
-            execvp('sudo', self.sudoargs)
+            os.execvp('sudo', self.sudoargs)
             return
         return console_message(self.mod.dotransform(
             type(
@@ -77,20 +77,20 @@ class MtgConsole(InteractiveConsole):
             if getattr(mod, 'dotransform', ''):
                 transforms[name] = ShellCommand(mod)
         InteractiveConsole.__init__(self, locals=transforms)
-        self.init_history(path.expanduser('~/.mtgsh_history'))
+        self.init_history(os.path.expanduser('~/.mtgsh_history'))
 
     def init_history(self, histfile):
-        readline.parse_and_bind('tab: complete')
-        if hasattr(readline, "read_history_file"):
-            try:
-                readline.read_history_file(histfile)
-            except IOError:
-                pass
-            register(self.save_history, histfile)
-
-    def save_history(self, histfile):
-        readline.write_history_file(histfile)
-        print ('bye!')
+        try:
+            import readline
+            readline.parse_and_bind('tab: complete')
+            if hasattr(readline, "read_history_file"):
+                try:
+                    readline.read_history_file(histfile)
+                except IOError:
+                    pass
+                register(lambda h: readline.write_history_file(h), histfile)
+        except ImportError:
+            pass
 
 
 def run(args):
