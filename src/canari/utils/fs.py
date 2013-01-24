@@ -14,6 +14,7 @@ if os.name == 'nt':
     LOCK_SH = 0    # the default
     LOCK_NB = 0x1  # LOCKFILE_FAIL_IMMEDIATELY
     LOCK_EX = 0x2  # LOCKFILE_EXCLUSIVE_LOCK
+    LOCK_UN = 0x4  # Unlock file. Not in NT API, just needs to be there.
 
     # --- the code is taken from pyserial project ---
     #
