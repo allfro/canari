@@ -11,7 +11,7 @@ if os.name == 'nt':
     from ctypes import *
     from ctypes.wintypes import BOOL, DWORD, HANDLE
 
-    LOCK_SH = 0    # the default
+    LOCK_SH = 0x0  # the default
     LOCK_NB = 0x1  # LOCKFILE_FAIL_IMMEDIATELY
     LOCK_EX = 0x2  # LOCKFILE_EXCLUSIVE_LOCK
     LOCK_UN = 0x4  # Unlock file. Not in NT API, just needs to be there.
@@ -86,7 +86,7 @@ if os.name == 'nt':
         overlapped = OVERLAPPED()
         if flags & LOCK_UN and UnlockFileEx(hfile, 0, 0, 0xFFFF0000, byref(overlapped)):
             return
-        elif flags & (LOCK_EX | LOCK_NB | LOCK_SH) and \
+        elif (not flags or flags & (LOCK_EX | LOCK_NB | LOCK_SH)) and \
              LockFileEx(hfile, flags, 0, 0, 0xFFFF0000, byref(overlapped)):
             return
         raise IOError(GetLastError())
