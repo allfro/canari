@@ -92,10 +92,10 @@ __all__ = ['ynbox'
     , 'passwordbox'
     , 'multpasswordbox'
     , 'multchoicebox'
-    , 'abouteasygui'
+#    , 'abouteasygui'
     , 'egversion'
-    , 'egdemo'
-    , 'EgStore'
+#    , 'egdemo'
+#    , 'EgStore'
     ]
 
 import sys, os
@@ -203,6 +203,19 @@ boxRoot = None
 ImageErrorMsg = (
     "\n\n---------------------------------------------\n"
     "Error: %s\n%s")
+
+def _bring_to_front():
+    from subprocess import Popen
+    Tk().destroy()
+    Popen([
+        'osascript',
+        '-e', 'tell application "System Events"',
+        '-e', 'set vprocs to every process whose unix id is %s' % os.getpid(),
+        '-e', 'repeat with proc in vprocs',
+        '-e', 'set the frontmost of proc to true',
+        '-e', 'end repeat',
+        '-e', 'end tell'
+    ])
 #-------------------------------------------------------------------
 # various boxes built on top of the basic buttonbox
 #-----------------------------------------------------------------------
@@ -348,9 +361,7 @@ def buttonbox(msg="",title=" "
     @arg choices: a list or tuple of the choices to be displayed
     """
     if sys.platform == 'darwin':
-        from subprocess import Popen
-        Tk().destroy()
-        Popen(['osascript', '-e', 'tell application "Python" to activate'])
+        _bring_to_front()
 
     global boxRoot, __replyButtonText, __widgetTexts, buttonsFrame
 
@@ -469,9 +480,7 @@ def integerbox(msg=""
     supported.  They have been replaced by "upperbound" and "lowerbound".
     """
     if sys.platform == 'darwin':
-        from subprocess import Popen
-        Tk().destroy()
-        Popen(['osascript', '-e', 'tell application "Python" to activate'])
+        _bring_to_front()
     if "argLowerBound" in invalidKeywordArguments:
         raise AssertionError(
             "\nintegerbox no longer supports the 'argLowerBound' argument.\n"
@@ -505,7 +514,8 @@ def integerbox(msg=""
 
     while 1:
         reply = enterbox(msg, title, str(default), image=image, root=root)
-        if reply == None: return None
+        if reply is None:
+            return None
 
         try:
             reply = int(reply)
@@ -640,9 +650,7 @@ def __multfillablebox(msg="Fill in values for the fields."
     , mask = None
     ):
     if sys.platform == 'darwin':
-        from subprocess import Popen
-        Tk().destroy()
-        Popen(['osascript', '-e', 'tell application "Python" to activate'])
+        _bring_to_front()
 
     global boxRoot, __multenterboxText, __multenterboxDefaultText, cancelButton, entryWidget, okButton
 
@@ -827,15 +835,14 @@ def __fillablebox(msg
     Returns the text that the user entered, or None if he cancels the operation.
     """
     if sys.platform == 'darwin':
-        from subprocess import Popen
-        Tk().destroy()
-        Popen(['osascript', '-e', 'tell application "Python" to activate'])
-
+        _bring_to_front()
     global boxRoot, __enterboxText, __enterboxDefaultText
     global cancelButton, entryWidget, okButton
 
-    if title == None: title == ""
-    if default == None: default = ""
+    if title is None:
+        title = ""
+    if default is None:
+        default = ""
     __enterboxDefaultText = default
     __enterboxText        = __enterboxDefaultText
 
@@ -1046,9 +1053,7 @@ def __choicebox(msg
     internal routine to support choicebox() and multchoicebox()
     """
     if sys.platform == 'darwin':
-        from subprocess import Popen
-        Tk().destroy()
-        Popen(['osascript', '-e', 'tell application "Python" to activate'])
+        _bring_to_front()
     global boxRoot, __choiceboxResults, choiceboxWidget, defaultText
     global choiceboxWidget, choiceboxChoices
     #-------------------------------------------------------------------
@@ -1069,7 +1074,8 @@ def __choicebox(msg
     lines_to_show = min(len(choices), 20)
     lines_to_show = 20
 
-    if title == None: title = ""
+    if title is None:
+        title = ""
 
     # Initialize __choiceboxResults
     # This is the value that will be returned if the user clicks the close icon
@@ -1342,8 +1348,9 @@ def exceptionbox(msg=None, title=None):
     Note that you do not need to (and cannot) pass an exception object
     as an argument.  The latest exception will automatically be used.
     """
-    if title == None: title = "Error Report"
-    if msg == None:
+    if title is None:
+        title = "Error Report"
+    if msg is None:
         msg = "An error (exception) has occurred in the program."
 
     codebox(msg, title, exception_format())
@@ -1382,11 +1389,11 @@ def textbox(msg=""
     displayed in the textbox.
     """
     if sys.platform == 'darwin':
-        from subprocess import Popen
-        Tk().destroy()
-        Popen(['osascript', '-e', 'tell application "Python" to activate'])
-    if msg == None: msg = ""
-    if title == None: title = ""
+        _bring_to_front()
+    if msg is None:
+        msg = ""
+    if title is None:
+        title = ""
 
     global boxRoot, __replyButtonText, __widgetTexts, buttonsFrame
     global rootWindowPosition
@@ -1557,9 +1564,7 @@ def diropenbox(msg=None
     directory exists, then the dialog box will start with that directory.
     """
     if sys.platform == 'darwin':
-        from subprocess import Popen
-        Tk().destroy()
-        Popen(['osascript', '-e', 'tell application "Python" to activate'])
+        _bring_to_front()
     title=getFileDialogTitle(msg,title)
     localRoot = Tk()
     localRoot.withdraw()
@@ -1711,9 +1716,7 @@ def fileopenbox(msg=None
     @arg filetypes: filemasks that a user can choose, e.g. "*.txt"
     """
     if sys.platform == 'darwin':
-        from subprocess import Popen
-        Tk().destroy()
-        Popen(['osascript', '-e', 'tell application "Python" to activate'])
+        _bring_to_front()
     localRoot = Tk()
     localRoot.withdraw()
 
@@ -1763,9 +1766,7 @@ def filesavebox(msg=None
     fileopenbox.
     """
     if sys.platform == 'darwin':
-        from subprocess import Popen
-        Tk().destroy()
-        Popen(['osascript', '-e', 'tell application "Python" to activate'])
+        _bring_to_front()
     localRoot = Tk()
     localRoot.withdraw()
 
