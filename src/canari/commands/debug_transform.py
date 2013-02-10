@@ -6,8 +6,8 @@ import sys
 from argparse import ArgumentParser
 from traceback import format_exc
 
-from canari.maltego.message import MaltegoException, MaltegoTransformResponseMessage
-from common import croak, import_transform, cmd_name, console_message, fix_binpath
+from canari.maltego.message import MaltegoException, MaltegoTransformResponseMessage, UIMessage
+from common import croak, import_transform, cmd_name, console_message, fix_binpath, sudo
 from canari.maltego.utils import onterminate, parseargs
 from canari.config import config
 
@@ -17,7 +17,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -71,8 +71,14 @@ def run(args):
         m = import_transform(transform)
 
         if os.name == 'posix' and hasattr(m.dotransform, 'privileged') and os.geteuid():
-            os.execvp('sudo', ['sudo'] + list(sys.argv))
-            exit(-1)
+            rc = sudo(sys.argv)
+            if rc == 1:
+                console_message(MaltegoTransformResponseMessage() + UIMessage('User cancelled transform.'))
+            elif rc == 2:
+                console_message(MaltegoTransformResponseMessage() + UIMessage('Too many incorrect password attempts.'))
+            elif rc:
+                console_message(MaltegoTransformResponseMessage() + UIMessage('Unknown error occurred.'))
+            exit(rc)
 
         if hasattr(m, 'onterminate'):
             onterminate(m.onterminate)

@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 
-from canari.easygui import passwordbox
+import sys
+import subprocess
+
 from canari.utils.fs import fmutex
-
-from pexpect import spawn, EOF
-from sys import argv, stderr
-from os import execvp
-
+from canari.easygui import passwordbox
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -21,28 +19,27 @@ __status__ = 'Development'
 
 def main():
 
-    if len(argv) == 1:
-        print 'usage: %s <command>' % argv[0]
+    if not sys.argv[1:]:
+        print 'usage: %s <command>' % sys.argv[0]
         exit(-1)
 
-    child = None
+    l = fmutex('pysudo.lock')
 
-    try:
-        l = fmutex('pysudo.lock')
-        child = spawn('sudo -S echo start')
-        while not child.expect(['Password:', 'start']):
-            password = passwordbox('Please enter your password.', 'sudo', '')
-            child.sendline(password)
-        del l
-        execvp('sudo', ['sudo'] + argv[1:])
+    p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:], stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    p.communicate()
 
-    except EOF:
-        stderr.write(child.before)
-    except TypeError:
-        stderr.write('Terminated.')
-    except Exception, e:
-        stderr.write(str(e))
+    if not p.returncode:
+        exit(0)
 
+    for i in range(0, 3):
+        password = passwordbox('Please enter your password.', 'sudo', '')
+        if password is None:
+            exit(1)
+        p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:], stdin=subprocess.PIPE)
+        p.communicate(input='%s\n' % password)
+        if not p.returncode:
+            exit(0)
+    exit(2)
 
 if __name__ == '__main__':
     main()

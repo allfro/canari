@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 import os
+import subprocess
 import sys
+import unicodedata
+from canari.utils.fs import fmutex
 
 from pkg_resources import resource_filename
 from distutils.dist import Distribution
@@ -11,6 +14,8 @@ from string import Template
 
 from canari.config import CanariConfigParser
 import threading
+
+
 
 def synchronized(func):
 
@@ -77,6 +82,10 @@ def _detect_settings_dir(d):
     print('Could not automatically find Maltego\'s settings directory. Use the -w parameter to specify its location, instead.')
 
 
+def to_utf8(s):
+    return unicodedata.normalize('NFKD', unicode(s)).encode('ascii', 'ignore')
+
+
 def detect_settings_dir():
     d = None
     if sys.platform.startswith('linux'):
@@ -88,6 +97,12 @@ def detect_settings_dir():
     else:
         raise NotImplementedError('Unknown or unsupported OS: %s' % repr(sys.platform))
     return d
+
+
+def sudo(args):
+    p = subprocess.Popen([os.path.join(get_bin_dir(), 'pysudo')] + args, stdin=subprocess.PIPE)
+    p.communicate()
+    return p.returncode
 
 
 def read_template(name, values):

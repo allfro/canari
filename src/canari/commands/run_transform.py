@@ -6,8 +6,8 @@ import sys
 from argparse import ArgumentParser
 from traceback import format_exc
 
-from canari.maltego.message import MaltegoException, MaltegoTransformResponseMessage
-from common import cmd_name, import_transform, fix_binpath, get_bin_dir
+from canari.maltego.message import MaltegoException, MaltegoTransformResponseMessage, UIMessage
+from common import cmd_name, import_transform, fix_binpath, get_bin_dir, sudo
 from canari.maltego.utils import onterminate, parseargs, croak, message
 from canari.config import config
 
@@ -17,7 +17,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -73,17 +73,14 @@ def run(args):
         m = import_transform(transform)
 
         if os.name == 'posix' and hasattr(m.dotransform, 'privileged') and os.geteuid():
-# Keep it for another day
-#            if platform == 'darwin':
-#                execvp(
-#                    'osascript',
-#                    ['osascript', '-e', 'do shell script "%s" with administrator privileges' % ' '.join(sys.argv)]
-#                )
-#            if sys.platform.startswith('linux') and path.exists("/usr/bin/gksudo"):
-#                execvp('/usr/bin/gksudo', ['/usr/bin/gksudo'] + list(sys.argv))
-#            else:
-            os.execvp(pysudo, [pysudo] + list(sys.argv))
-            exit(-1)
+            rc = sudo(sys.argv)
+            if rc == 1:
+                message(MaltegoTransformResponseMessage() + UIMessage('User cancelled transform.'))
+            elif rc == 2:
+                message(MaltegoTransformResponseMessage() + UIMessage('Too many incorrect password attempts.'))
+            elif rc:
+                message(MaltegoTransformResponseMessage() + UIMessage('Unknown error occurred.'))
+            exit(0)
 
         if hasattr(m, 'onterminate'):
             onterminate(m.onterminate)
