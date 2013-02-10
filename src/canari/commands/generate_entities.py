@@ -16,7 +16,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = ['Nadeem Douba']
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -77,6 +77,14 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    '--maltego-entities',
+    '-M',
+    help="Generate entities belonging to the 'maltego' namespace.",
+    default=False,
+    action='store_true'
+)
+
+parser.add_argument(
     '--append',
     '-a',
     help='Whether or not to append to the existing *.py file.',
@@ -107,6 +115,9 @@ def parse_args(args):
     args = parser.parse_args(args)
     if args.outfile is None:
         args.outfile = path.join(project_tree()['transforms'], 'common', 'entities.py')
+    if args.maltego_entities:
+        args.namespace.extend(args.exclude_namespace)
+        args.exclude_namespace = []
     return args
 
 
