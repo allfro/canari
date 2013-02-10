@@ -25,7 +25,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.4'
+__version__ = '0.5'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -294,7 +294,7 @@ def run(args):
 
     if os.name == 'posix' and os.geteuid() and (opts.port <= 1024 or opts.enable_privileged):
         print ('You must run this server as root to continue...')
-        os.execvp('sudo', ['sudo'] + list(sys.argv))
+        os.execvp('sudo', ['sudo'] + sys.argv)
 
     fix_binpath(config['default/path'])
 
