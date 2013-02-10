@@ -10,20 +10,25 @@ scripts = [
 ]
 
 if os.name == 'posix':
-    scripts.append('src/scripts/pysudo')
+    scripts.extend(
+        [
+            'src/scripts/pysudo'
+        ]
+    )
+
 
 extras = [
     'readline'
 ]
 
+
 if os.name == 'nt':
     scripts += ['%s.bat' % s for s in scripts]
-
 
 setup(
     name='canari',
     author='Nadeem Douba',
-    version='0.6',
+    version='0.7',
     author_email='ndouba@gmail.com',
     description='Rapid transform development and transform execution framework for Maltego.',
     license='GPL',
@@ -35,7 +40,6 @@ setup(
         '' : [ '*.conf', '*.plate' ]
     },
     install_requires=[
-        'pexpect',
         'argparse'
     ],
     dependency_links=[]
