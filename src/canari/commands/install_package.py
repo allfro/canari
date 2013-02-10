@@ -23,7 +23,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.3'
+__version__ = '0.4'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -47,7 +47,7 @@ parser.add_argument(
     '-w',
     '--working-dir',
     metavar='[working dir]',
-    default=os.getcwd(),
+    default=os.path.join(os.path.expanduser('~'), '.canari'),
     help='the path that will be used as the working directory for the transforms being installed (default: current working directory)'
 )
 parser.add_argument(
@@ -79,6 +79,7 @@ def parse_args(args):
             print "Make sure you've run Maltego for the first time and activated your license."
             exit(-1)
 
+    args.working_dir = os.path.realpath(args.working_dir)
     return args
 
 
@@ -268,11 +269,30 @@ def installmachines(package, prefix):
         pass
 
 
+
+def makedirs(working_dir):
+    name = os.sep
+    for i in working_dir.split(os.sep):
+        name = os.path.join(name, i)
+        if not os.path.exists(name):
+            os.mkdir(name, 0755)
+
 # Main
 def run(args):
 
+    if os.name == 'posix' and not os.geteuid():
+        login = os.getlogin()
+
+        if login != 'root':
+            print 'Why are you using root to run this command? You should be using %s! Bringing you down...' % login
+            import pwd
+            user = pwd.getpwnam(login)
+            os.setgid(user.pw_gid)
+            os.setuid(user.pw_uid)
+
     opts = parse_args(args)
 
+    makedirs(opts.working_dir)
     fix_pypath()
     fix_etree()
 
