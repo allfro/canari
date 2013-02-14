@@ -58,9 +58,17 @@ def run(args):
     opts = parse_args(args)
 
     initf = path.join(opts.transform_dir, '__init__.py')
-    transform = opts.transform
+    transform = opts.transform if not opts.transform.endswith('.py') else opts.transform[:-3]
+
+    if '.' in transform:
+        print "Transform name (%s) cannot have a dot ('.')." % repr(transform)
+        exit(-1)
+    elif not transform:
+        print "You must specify a valid transform name."
+        exit(-1)
+
     directory = opts.transform_dir
-    transformf = path.join(directory, transform if transform.endswith('.py') else '%s.py' % transform )
+    transformf = path.join(directory, opts.transform if opts.transform.endswith('.py') else '%s.py' % opts.transform )
 
     if not path.exists(initf):
         print ('Directory %s does not appear to be a python package directory... quitting!' % repr(opts.transform_dir))
