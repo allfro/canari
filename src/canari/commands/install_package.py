@@ -271,11 +271,16 @@ def installmachines(package, prefix):
 
 
 def makedirs(working_dir):
-    name = os.sep
-    for i in working_dir.split(os.sep):
+    name = ''
+    if os.name != 'nt':
+        name = os.sep
+    for l, i in enumerate(working_dir.split(os.sep)):
         name = os.path.join(name, i)
+        if name.endswith(':') and not l and os.name == 'nt':
+            name = '%s%s' % (name, os.sep)
         if not os.path.exists(name):
             os.mkdir(name, 0755)
+
 
 # Main
 def run(args):
