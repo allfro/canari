@@ -11,7 +11,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -23,7 +23,6 @@ def main():
         print 'usage: %s <command>' % sys.argv[0]
         exit(-1)
 
-    l = fmutex('pysudo.lock')
 
     p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:], stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     p.communicate()
@@ -31,14 +30,18 @@ def main():
     if not p.returncode:
         exit(0)
 
+    l = fmutex('pysudo.lock')
     for i in range(0, 3):
         password = passwordbox('Please enter your password.', 'sudo', '')
         if password is None:
             exit(1)
-        p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:], stdin=subprocess.PIPE)
+        p = subprocess.Popen(['sudo', '-S', 'echo', 'yes'], stdin=subprocess.PIPE)
         p.communicate(input='%s\n' % password)
         if not p.returncode:
-            exit(0)
+            l.unlock()
+            p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:])
+            p.communicate()
+            exit(p.returncode)
     exit(2)
 
 if __name__ == '__main__':
