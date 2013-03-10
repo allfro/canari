@@ -35,7 +35,7 @@ def main():
         password = passwordbox('Please enter your password.', 'sudo', '')
         if password is None:
             exit(1)
-        p = subprocess.Popen(['sudo', '-S', 'echo', 'yes'], stdin=subprocess.PIPE)
+        p = subprocess.Popen(['sudo', '-S', 'true'], stdin=subprocess.PIPE)
         p.communicate(input='%s\n' % password)
         if not p.returncode:
             l.unlock()
