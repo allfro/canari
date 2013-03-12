@@ -19,7 +19,10 @@ etc = 'canari.resources.etc'
 
 
 def imageicon(pkg, name):
-    return 'file://%s' % resource_filename(pkg, name)
+    name = resource_filename(pkg, name))
+    if name[0] != '/':
+        return 'file:///%s' % name
+    return 'file://%s' % name
 
 
 def imagepath(pkg, name):
