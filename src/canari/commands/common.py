@@ -157,7 +157,7 @@ def fix_pypath():
 
 
 def fix_binpath(paths):
-    if paths is not None:
+    if paths is not None and paths:
         if isinstance(paths, basestring):
             os.environ['PATH'] = paths
         elif isinstance(paths, list):
