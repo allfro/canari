@@ -1,20 +1,29 @@
 #!/usr/bin/env python
 
-import os
-import subprocess
-import sys
-import unicodedata
-from canari.utils.fs import fmutex
-
+from distutils.command.install import install
 from pkg_resources import resource_filename
 from distutils.dist import Distribution
-from distutils.command.install import install
 from datetime import datetime
 from string import Template
+import unicodedata
+import subprocess
+import threading
+import sys
+import os
+
 
 from canari.config import CanariConfigParser
-import threading
 
+
+__author__ = 'Nadeem Douba'
+__copyright__ = 'Copyright 2012, Canari Project'
+__credits__ = []
+
+__license__ = 'GPL'
+__version__ = '0.3'
+__maintainer__ = 'Nadeem Douba'
+__email__ = 'ndouba@gmail.com'
+__status__ = 'Development'
 
 
 def synchronized(func):
@@ -27,15 +36,6 @@ def synchronized(func):
 
     return synced_func
 
-__author__ = 'Nadeem Douba'
-__copyright__ = 'Copyright 2012, Canari Project'
-__credits__ = []
-
-__license__ = 'GPL'
-__version__ = '0.2'
-__maintainer__ = 'Nadeem Douba'
-__email__ = 'ndouba@gmail.com'
-__status__ = 'Development'
 
 def fix_etree():
     try:

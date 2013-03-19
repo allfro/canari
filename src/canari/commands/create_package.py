@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-from common import read_template, write_template, generate_all, build_skeleton, cmd_name, parse_bool
-
 from argparse import ArgumentParser
 from datetime import datetime
 from getpass import getuser
 from os import path
+
+from common import read_template, write_template, generate_all, build_skeleton, cmd_name, parse_bool
+import canari
 
 
 __author__ = 'Nadeem Douba'
@@ -13,7 +14,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.5'
+__version__ = '0.6'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -150,7 +151,7 @@ def run(args):
         'maintainer' : getuser(),
         'example' : True,
         'description' : '',
-        'canari_version' : __version__
+        'canari_version' : canari.__version__
     }
 
     ask_user(values)

@@ -26,5 +26,7 @@ __all__ = [
     'rename_transform',
     'list_commands',
     'run_server',
-    'generate_entities'
+    'generate_entities',
+    'version',
+    'banner'
 ]
