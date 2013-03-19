@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
 import os
+import sys
 from setuptools import setup, find_packages
 
+sys.path.insert(0, 'src')
+
+import canari
 
 scripts = [
     'src/scripts/canari',
@@ -28,7 +32,7 @@ if os.name == 'nt':
 setup(
     name='canari',
     author='Nadeem Douba',
-    version='0.7',
+    version=canari.__version__,
     author_email='ndouba@gmail.com',
     description='Rapid transform development and transform execution framework for Maltego.',
     license='GPL',
