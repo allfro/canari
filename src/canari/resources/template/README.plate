@@ -15,6 +15,7 @@ directory structure to use in the following manner:
 * `maltego/` is where you can store your Maltego entity exports.
 * `src/${package}/resources/maltego` directory is where your `entities.mtz` and `*.machine` files can be stored for auto
   install and uninstall.
+* `src/${package}/resources/external` directory is where you can place non-Python transforms written in other languages.
 
 If you're going to add a new transform in the transforms directory, remember to update the `__all__` variable in
 `src/${package}/transforms/__init__.py`. Otherwise, `canari install-package` won't attempt to install the transform.
