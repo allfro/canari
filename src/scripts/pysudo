@@ -56,7 +56,7 @@ def main():
         # Did it work? Yes: let's do it!
         if not p.returncode:
             l.unlock()
-            p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:])
+            p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:], stdin=subprocess.PIPE)
             p.communicate(input='%s\n' % password)
             exit(p.returncode)
 
