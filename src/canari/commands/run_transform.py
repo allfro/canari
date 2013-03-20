@@ -2,12 +2,12 @@
 
 import os
 import sys
-
-from argparse import ArgumentParser
 from traceback import format_exc
 
+from argparse import ArgumentParser
+
 from canari.maltego.message import MaltegoException, MaltegoTransformResponseMessage, UIMessage
-from common import cmd_name, import_transform, fix_binpath, get_bin_dir, sudo
+from common import cmd_name, import_transform, fix_binpath, sudo
 from canari.maltego.utils import onterminate, parseargs, croak, message
 from canari.config import config
 
@@ -66,7 +66,6 @@ def run(args):
     [transform, params, value, fields] = parseargs(['canari %s' % cmd_name(__name__)] + args)
 
     m = None
-    pysudo = os.path.join(get_bin_dir(), 'pysudo')
 
     fix_binpath(config['default/path'])
     try:
