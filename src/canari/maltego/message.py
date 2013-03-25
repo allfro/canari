@@ -2,8 +2,9 @@
 
 from canari.xmltools.oxml import *
 
+from datetime import datetime, date, timedelta
 from numbers import Number
-from re import sub
+from re import sub, compile, match
 
 
 __author__ = 'Nadeem Douba'
@@ -11,12 +12,13 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
 __all__ = [
+    'timespan',
     'Message',
     'MaltegoElement',
     'MaltegoMessage',
@@ -32,7 +34,12 @@ __all__ = [
     'BooleanEntityField',
     'FloatEntityField',
     'LongEntityField',
+    'DateTimeEntityField',
+    'TimeSpanEntityField',
+    'DateEntityField',
     'EntityFieldType',
+    'RegexEntityField'
+    'ColorEntityField'
     'EntityField',
     'UIMessageType',
     'UIMessage',
@@ -182,7 +189,8 @@ class EnumEntityField(StringEntityField):
 class IntegerEntityField(StringEntityField):
 
     def __get__(self, obj, objtype):
-        return int(super(IntegerEntityField, self).__get__(obj, objtype))
+        i = super(IntegerEntityField, self).__get__(obj, objtype)
+        return int(i) if i is not None else None
 
     def __set__(self, obj, val):
         if not isinstance(val, Number):
@@ -193,7 +201,8 @@ class IntegerEntityField(StringEntityField):
 class BooleanEntityField(StringEntityField):
 
     def __get__(self, obj, objtype):
-        return super(BooleanEntityField, self).__get__(obj, objtype) == 'true'
+        b = super(BooleanEntityField, self).__get__(obj, objtype)
+        return b == 'true' if b is not None else None
 
     def __set__(self, obj, val):
         if not isinstance(val, bool):
@@ -204,7 +213,8 @@ class BooleanEntityField(StringEntityField):
 class FloatEntityField(StringEntityField):
 
     def __get__(self, obj, objtype):
-        return float(super(FloatEntityField, self).__get__(obj, objtype))
+        f = super(FloatEntityField, self).__get__(obj, objtype)
+        return float(f) if f is not None else None
 
     def __set__(self, obj, val):
         if not isinstance(val, Number):
@@ -215,12 +225,91 @@ class FloatEntityField(StringEntityField):
 class LongEntityField(StringEntityField):
 
     def __get__(self, obj, objtype):
-        return long(super(LongEntityField, self).__get__(obj, objtype))
+        l = super(LongEntityField, self).__get__(obj, objtype)
+        return long(l) if l is not None else None
 
     def __set__(self, obj, val):
         if not isinstance(val, Number):
             raise TypeError('Expected an instance of float (got %s instance instead)' % type(val).__name__)
         super(LongEntityField, self).__set__(obj, val)
+
+
+class DateTimeEntityField(StringEntityField):
+
+    def __get__(self, obj, objtype):
+        d = super(DateTimeEntityField, self).__get__(obj, objtype)
+        return datetime.strptime(d, '%Y-%m-%d %H:%M:%S.%f') if d is not None else None
+
+    def __set__(self, obj, val):
+        if not isinstance(val, datetime):
+            raise TypeError('Expected an instance of datetime (got %s instance instead)' % type(val).__name__)
+        super(DateTimeEntityField, self).__set__(obj, val)
+
+
+class DateEntityField(StringEntityField):
+
+    def __get__(self, obj, objtype):
+        d = super(DateEntityField, self).__get__(obj, objtype)
+        return datetime.strptime(d, '%Y-%m-%d').date() if d is not None else None
+
+    def __set__(self, obj, val):
+        if not isinstance(val, date):
+            raise TypeError('Expected an instance of date (got %s instance instead)' % type(val).__name__)
+        super(DateEntityField, self).__set__(obj, val)
+
+
+class timespan(timedelta):
+
+    matcher = compile('(\d+)d (\d+)h(\d+)m(\d+)\.(\d+)s')
+
+    def __str__(self):
+        return '%dd %dh%dm%d.%03ds' % (
+            abs(self.days),
+            int(self.seconds) // 3600,
+            int(self.seconds) % 3600 // 60,
+            int(self.seconds) % 60,
+            int(self.microseconds)
+            )
+
+    @classmethod
+    def fromstring(cls, ts):
+        m = cls.matcher.match(ts)
+        if m is None:
+            raise ValueError('Time span must be in "%%dd %%Hh%%Mm%%S.%%fs" format')
+        days, hours, minutes, seconds, useconds = [ int(i) for i in m.groups() ]
+        return timespan(days, (hours * 3600) + (minutes * 60) + seconds, useconds)
+
+
+class TimeSpanEntityField(StringEntityField):
+
+    def __get__(self, obj, objtype):
+        d = super(TimeSpanEntityField, self).__get__(obj, objtype)
+        return timespan.fromstring(d) if d is not None else None
+
+    def __set__(self, obj, val):
+        if not isinstance(val, timespan) or not isinstance(val, timedelta):
+            raise TypeError('Expected an instance of timedelta (got %s instance instead)' % type(val).__name__)
+        if val.__class__ is timedelta:
+            val = timespan(val.days, val.seconds, val.microseconds)
+        super(TimeSpanEntityField, self).__set__(obj, val)
+
+
+class RegexEntityField(StringEntityField):
+
+    pattern = '.*'
+
+    def __set__(self, obj, val):
+        if not isinstance(val, basestring):
+            val = str(val)
+        if match(self.pattern, val) is None:
+            raise ValueError('Failed match for %s, expected pattern %s instead.' % (repr(val), repr(self.pattern)))
+        super(RegexEntityField, self).__set__(obj, val)
+
+
+class ColorEntityField(RegexEntityField):
+
+    pattern = '^#[0-9a-fA-F]{6}$'
+
 
 
 class EntityFieldType(object):
@@ -230,6 +319,10 @@ class EntityFieldType(object):
     Float = FloatEntityField
     Bool = BooleanEntityField
     Enum = EnumEntityField
+    Date = DateEntityField
+    DateTime = DateTimeEntityField
+    TimeSpan = TimeSpanEntityField
+    Color = ColorEntityField
 
 
 class EntityField(object):
