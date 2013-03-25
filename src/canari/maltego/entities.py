@@ -13,22 +13,6 @@ __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
 __all__ = [
-    'Device',
-    'BuiltWithTechnology',
-    'Domain',
-    'DNSName',
-    'MXRecord',
-    'NSRecord',
-    'IPv4Address',
-    'Netblock',
-    'AS',
-    'Website',
-    'URL',
-    'Phrase',
-    'Document',
-    'Person',
-    'EmailAddress',
-    'Twit',
     'Affiliation',
     'AffiliationBebo',
     'AffiliationFacebook',
@@ -38,29 +22,61 @@ __all__ = [
     'AffiliationOrkut',
     'AffiliationSpock',
     'AffiliationTwitter',
-    'AffiliationZoominfo',
     'AffiliationWikiEdit',
-    'Location',
-    'PhoneNumber',
+    'AffiliationZoominfo',
+    'Alias',
+    'AS',
     'Banner',
+    'BuiltWithTechnology',
+    'Device',
+    'DNSName',
+    'Document',
+    'Domain',
+    'EmailAddress',
+    'FacebookObject',
+    'File',
+    'GPS',
+    'Image',
+    'IPv4Address',
+    'Location',
+    'MXRecord',
+    'Netblock',
+    'NominatimLocation',
+    'NSRecord',
+    'Person',
+    'PhoneNumber',
+    'Phrase',
     'Port',
     'Service',
+    'Twit',
+    'URL',
     'Vuln',
     'Webdir',
+    'Website',
     'WebTitle'
 ]
 
 
+@EntityField(name='properties.gps', displayname='GPS Co-ordinate')
+@EntityField(name='latitude', displayname='Latitude', type=EntityFieldType.Float)
+@EntityField(name='longitude', displayname='Longitude', type=EntityFieldType.Float)
+class GPS(Entity):
+    pass
+
+
+@EntityField(name='properties.device', displayname='Device')
 class Device(Entity):
     pass
 
 
+@EntityField(name='properties.builtwithtechnology', propname='builtwith', displayname='BuiltWith Technology')
 class BuiltWithTechnology(Entity):
     pass
 
 
+
 @EntityField(name='fqdn', displayname='Domain Name')
-@EntityField(name='whois-info', propname='whoisinfo', displayname='WHOIS Info')
+@EntityField(name='whois', displayname='WHOIS Info')
 class Domain(Entity):
     pass
 
@@ -97,17 +113,16 @@ class AS(Entity):
     pass
 
 
-@EntityField(name='http', displayname='HTTP Ports')
-@EntityField(name='https', displayname='HTTPS Ports')
-@EntityField(name='servertype', displayname='Server Banner')
-@EntityField(name='URLS', propname='urls', displayname='URLs')
+@EntityField(name='website.ssl-enabled', displayname='SSL Enabled', type=EntityFieldType.Bool)
+@EntityField(name='fqdn', displayname='Website')
+@EntityField(name='ports', displayname='Ports', type=EntityFieldType.Integer)
 class Website(Entity):
     pass
 
 
-@EntityField(name='fqdn', displayname='Website')
-@EntityField(name='website.ssl-enabled', propname='ssl', displayname='SSL Enabled', type=EntityFieldType.Bool)
-@EntityField(name='ports', displayname='Ports')
+@EntityField(name='maltego.v2.value.property', propname='shorttitle', displayname='Short title')
+@EntityField(name='theurl', propname='url', displayname='URL')
+@EntityField(name='fulltitle', displayname='Title')
 class URL(Entity):
     pass
 
@@ -117,16 +132,16 @@ class Phrase(Entity):
     pass
 
 
-@EntityField(name='title', displayname='Title')
-@EntityField(name='document.meta-data', propname='metadata', displayname='Meta-Data')
-@EntityField(name='url', displayname='URL')
+@EntityField(name='maltego.v2.value.property', propname='title', displayname='Title')
+@EntityField(name='link', propname='url', displayname='URL')
+@EntityField(name='metainfo', propname='metadata', displayname='Meta-Data')
 class Document(Entity):
     pass
 
 
+@EntityField(name='lastname', propname='lastname', displayname='Surname')
+@EntityField(name='firstname', propname='firstnames', displayname='First Names')
 @EntityField(name='person.fullname', propname='fullname', displayname='Full Name')
-@EntityField(name='person.firstnames', propname='firstnames', displayname='First Names')
-@EntityField(name='person.lastname', propname='lastname', displayname='Surname')
 class Person(Entity):
     pass
 
@@ -136,22 +151,22 @@ class EmailAddress(Entity):
     pass
 
 
-@EntityField(name='twit.name', propname='name', displayname='Twit')
-@EntityField(name='id', displayname='Twit ID')
-@EntityField(name='author', displayname='Author')
-@EntityField(name='author_uri', propname='authoruri', displayname='AUthor URI')
 @EntityField(name='content', displayname='Content')
-@EntityField(name='imglink', displayname='Image Link')
 @EntityField(name='pubdate', displayname='Date published')
+@EntityField(name='imglink', displayname='Image Link')
+@EntityField(name='author', displayname='Author')
 @EntityField(name='title', displayname='Title')
+@EntityField(name='author_uri', propname='authoruri', displayname='Author URI')
+@EntityField(name='twit.name', propname='twitname', displayname='Twit')
+@EntityField(name='id', displayname='Twit ID')
 class Twit(Entity):
     pass
 
 
 @EntityField(name='person.name', propname='name', displayname='Name')
-@EntityField(name='affiliation.uid', propname='uid', displayname='UID')
-@EntityField(name='affiliation.network', propname='network', displayname='Network')
-@EntityField(name='affiliation.profile-url', propname='profileurl', displayname='Profile URL')
+@EntityField(name='uid', displayname='UID')
+@EntityField(name='network', displayname='Network')
+@EntityField(name='profile_url', propname='profileurl', displayname='Profile URL')
 class Affiliation(Entity):
     pass
 
@@ -184,10 +199,15 @@ class AffiliationSpock(Affiliation):
     pass
 
 
-@EntityField(name='twitter.number', propname='number', displayname='Twitter Number')
-@EntityField(name='twitter.screen-name', propname='number', displayname='Screen Name')
-@EntityField(name='twitter.friendcount', propname='number', displayname='Friend Count')
-@EntityField(name='twitter.fullname', propname='fullname', displayname='Real Name')
+@EntityField(name='properties.facebookobject', propname='object', displayname='Facebook Object')
+class FacebookObject(Entity):
+    pass
+
+
+@EntityField(name='twitter.number', propname='number', displayname='Twitter Number', type=EntityFieldType.Integer)
+@EntityField(name='twitter.screen-name', propname='screenname', displayname='Screen Name')
+@EntityField(name='twitter.friendcount', propname='friendcount', displayname='Friend Count', type=EntityFieldType.Integer)
+@EntityField(name='person.fullname', propname='fullname', displayname='Real Name')
 class AffiliationTwitter(Affiliation):
     name = "affiliation.Twitter"
 
@@ -200,23 +220,47 @@ class AffiliationWikiEdit(Affiliation):
     pass
 
 
-@EntityField(name='location.name', propname='name', displayname='Name')
-@EntityField(name='country', displayname='Country')
 @EntityField(name='city', displayname='City')
-@EntityField(name='location.area', propname='area', displayname='Area')
-@EntityField(name='countrycode', displayname='Country Code')
-@EntityField(name='longitude', displayname='Longitude')
-@EntityField(name='latitude', displayname='Latitude')
+@EntityField(name='countrysc', propname='countrycode', displayname='Country Code')
+@EntityField(name='area', displayname='Area')
+@EntityField(name='country', displayname='Country')
+@EntityField(name='long', propname='longitude', displayname='Longitude', type=EntityFieldType.Float)
+@EntityField(name='lat', propname='latitude', displayname='Latitude', type=EntityFieldType.Float)
+@EntityField(name='streetaddress', displayname='Street Address')
+@EntityField(name='location.areacode', displayname='Area Code')
+@EntityField(name='location.name', propname='locationname', displayname='Name')
 class Location(Entity):
     pass
 
 
+@EntityField(name='properties.nominatimlocation', propname='nominatim', displayname='Nominatim Location')
+class NominatimLocation(Entity):
+    pass
+
+
+@EntityField(name='areacode', displayname='Area Code')
+@EntityField(name='lastnumbers', displayname='Last Digits')
+@EntityField(name='citycode', displayname='City Code')
 @EntityField(name='phonenumber', displayname='Phone Number')
-@EntityField(name='phonenumber.countrycode', propname='countrycode', displayname='Country Code')
-@EntityField(name='phonenumber.citycode', propname='citycode', displayname='City Code')
-@EntityField(name='phonenumber.areacode', propname='areacode', displayname='Area Code')
-@EntityField(name='phonenumber.lastnumbers', propname='lastnumbers', displayname='Last Digits')
+@EntityField(name='countrycode', displayname='Country Code')
 class PhoneNumber(Entity):
+    pass
+
+
+@EntityField(name='properties.alias', propname='alias', displayname='Alias')
+class Alias(Entity):
+    pass
+
+
+@EntityField(name='properties.image', propname='description', displayname='Description')
+@EntityField(name='fullImage', propname='url', displayname='URL')
+class Image(Entity):
+    pass
+
+
+@EntityField(name='source', displayname='Source')
+@EntityField(name='description', displayname='Description')
+class File(Entity):
     pass
 
 
