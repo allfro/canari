@@ -44,7 +44,8 @@ setup(
         '' : [ '*.conf', '*.plate' ]
     },
     install_requires=[
-        'argparse'
+        'argparse',
+        'flask'
     ],
     dependency_links=[]
 )
