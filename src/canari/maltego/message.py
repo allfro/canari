@@ -12,7 +12,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -82,6 +82,18 @@ class MaltegoException(MaltegoElement, Exception):
         super(MaltegoException, self).__init__('Exception')
         Exception.__init__(self, message)
         self.text = message if not isinstance(message, basestring) else message
+
+
+class MaltegoTransformRequestMessage(object):
+
+    def __init__(self, value, fields, parameters, limits=None):
+        self.value = value
+        self.fields = fields
+        self.params = parameters
+        if limits is None:
+            self.limits = dict(soft=500, hard=10000)
+        else:
+            self.limits = dict(soft=limits.get('SoftLimit', 500), hard=limits.get('HardLimit', 10000))
 
 
 @XMLSubElement(name='UIMessages', propname='uimessages', type=XSSubElementType.List)
