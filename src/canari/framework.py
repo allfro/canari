@@ -4,8 +4,8 @@ from subprocess import PIPE, Popen
 from canari.resource import external_resource
 from canari.utils.stack import modulecallee
 
-from os import execvp, path
-from re import split
+import os
+import re
 
 
 __author__ = 'Nadeem Douba'
@@ -13,7 +13,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -65,7 +65,7 @@ class ExternalCommand(object):
         if interpreter is not None:
             self._extra_external_args.append(interpreter)
             libpath = external_resource(
-                path.dirname(transform_name),
+                os.path.dirname(transform_name),
                 '%s.resources.external' % modulecallee().__name__.split('.')[0]
             )
             if interpreter.startswith('perl') or interpreter.startswith('ruby'):
@@ -86,7 +86,7 @@ class ExternalCommand(object):
             )
 
         if isinstance(transform_args, basestring):
-            self._extra_external_args = split('\s+', transform_args)
+            self._extra_external_args = re.split('\s+', transform_args)
         else:
             self._extra_external_args.extend(transform_args)
 
@@ -100,4 +100,6 @@ class ExternalCommand(object):
             p = Popen(self._extra_external_args + list(args), stdin=PIPE, stdout=PIPE)
             out, err = p.communicate(request_xml)
             return out
-        execvp(self._extra_external_args[0], self._extra_external_args + list(args))
+        p = Popen(self._extra_external_args + list(args))
+        p.communicate()
+        exit(p.returncode)
