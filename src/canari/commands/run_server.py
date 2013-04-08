@@ -14,9 +14,9 @@ from urlparse import urlsplit
 from re import sub, findall
 from hashlib import md5
 
-from canari.maltego.message import (MaltegoTransformResponseMessage, MaltegoException,
+from canari.maltego.message import (MaltegoTransformResponseMessage, MaltegoException, MaltegoTransformRequestMessage,
                                MaltegoTransformExceptionMessage, MaltegoMessage, Message)
-from common import cmd_name, import_transform, fix_binpath, fix_pypath, import_package
+from common import cmd_name, import_transform, fix_binpath, fix_pypath, import_package, get_transform_version
 from canari.config import config
 
 
@@ -25,7 +25,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.5'
+__version__ = '0.6'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -187,21 +187,14 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
                     config['default/%s' % k] = i
             limits = xml.find('Limits').attrib
 
-
             msg = t[0](
-                type(
-                    'MaltegoTransformRequestMessage',
-                    (object,),
-                        {
-                        'value' : value,
-                        'fields' : fields,
-                        'params' : params,
-                        'limits' : limits
-                    }
-                )(),
+                MaltegoTransformRequestMessage(value, fields, params, limits),
                 request_str if hasattr(t[0], 'cmd') and callable(t[0].cmd) else MaltegoTransformResponseMessage()
+            ) if get_transform_version(t[0]) == 2 else t[0](
+                MaltegoTransformRequestMessage(value, fields, params, limits),
+                request_str if hasattr(t[0], 'cmd') and callable(t[0].cmd) else MaltegoTransformResponseMessage(),
+                config
             )
-
 
             if isinstance(msg, MaltegoTransformResponseMessage) or isinstance(msg, basestring):
                 message(msg, self)

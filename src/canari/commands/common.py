@@ -8,6 +8,7 @@ from string import Template
 import unicodedata
 import subprocess
 import threading
+import inspect
 import sys
 import os
 
@@ -20,7 +21,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.3'
+__version__ = '0.4'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -37,6 +38,16 @@ def synchronized(func):
     return synced_func
 
 
+def get_transform_version(transform):
+    spec = inspect.getargspec(transform)
+    if spec.varargs is not None:
+        return 3
+    n = len(spec.args)
+    if 2 <= n <= 3:
+        return n
+    raise Exception('Could not determine transform version.')
+
+
 def fix_etree():
     try:
         from xml.etree.cElementTree import XML
@@ -44,6 +55,7 @@ def fix_etree():
         e.find('t[@a="1"]')
     except SyntaxError:
         import canari.xmltools.fixetree
+
 
 def get_bin_dir():
     d = install(Distribution())
@@ -227,14 +239,11 @@ def init_pkg():
 
 
 def project_root():
-
     marker = '.canari'
-
     for i in range(0, 5):
         if os.path.exists(marker):
             return os.path.dirname(os.path.realpath(marker))
         marker = '..%s%s' % (os.sep, marker)
-
     print 'Unable to determine project root.'
     exit(-1)
 

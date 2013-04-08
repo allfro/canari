@@ -6,8 +6,9 @@ import sys
 from argparse import ArgumentParser
 from traceback import format_exc
 
-from canari.maltego.message import MaltegoException, MaltegoTransformResponseMessage, UIMessage
-from common import croak, import_transform, cmd_name, console_message, fix_binpath, sudo
+from common import croak, import_transform, cmd_name, console_message, fix_binpath, sudo, get_transform_version
+from canari.maltego.message import (MaltegoException, MaltegoTransformResponseMessage, UIMessage,
+                                    MaltegoTransformRequestMessage)
 from canari.maltego.utils import onterminate, parseargs
 from canari.config import config
 
@@ -17,7 +18,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.3'
+__version__ = '0.4'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -86,16 +87,12 @@ def run(args):
             m.__setattr__('onterminate', lambda *args: exit(-1))
 
         msg = m.dotransform(
-            type(
-                'MaltegoTransformRequestMessage',
-                (object,),
-                    {
-                    'value' : value,
-                    'fields' : fields,
-                    'params' : params
-                }
-            )(),
+            MaltegoTransformRequestMessage(value, fields, params),
             MaltegoTransformResponseMessage()
+        ) if get_transform_version(m.dotransform) == 2 else m.dotransform(
+            MaltegoTransformRequestMessage(value, fields, params),
+            MaltegoTransformResponseMessage(),
+            config
         )
 
         if isinstance(msg, MaltegoTransformResponseMessage):
