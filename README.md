@@ -1,6 +1,13 @@
 Canari - Maltego Rapid Transform Development Framework
 ======================================================
 
+**--------------------------------------BEGIN OF WARNING--------------------------------------**
+
+**This README is out of date. Please go to [http://www.canariproject.com/canari-a-quick-introduction/](http://www.canariproject.com/canari-a-quick-introduction/)
+for more up-to-date information.**
+
+**---------------------------------------END OF WARNING----------------------------------------**
+
 ## 1.0 - Introduction
 
 Canari is a **rapid** transform development framework for [Maltego](http://paterva.com/) written in Python. The original
@@ -25,19 +32,19 @@ throughout the documentation:
 * **Transform**: a function that takes one entity as input and produces zero or more entities as output.
 * **Input Entity**: the entity that is being passed into the transform to use for data mining purposes.
 * **Output Entity**: the entity that is being returned by the transform to be drawn on a Maltego graph.
-* **Transform Module**: a python module local transform code.
+* **Transform Module**: a python module containing transform code.
 * **Transform Package**: a python package containing one or more transform modules.
 
 ## 2.0 - Why Use Canari?
 
-To develop *local* transforms for Maltego with *ease*; no need to learn XML, the local transform 
-[specification](http://paterva.com/web5/documentation/localtransforms.php), or develop tedious routines for command-line
+To develop *local* and *remote* transforms for Maltego with *ease*; no need to learn XML, the local/remote transform 
+specification, or develop tedious routines for command-line
 input parsing, debugging, or XML messaging. All you need to do is focus on developing the core data mining logic and
 Canari does the rest. Canari's interface is designed on the principles of
 [convention over configuration](http://en.wikipedia.org/wiki/Convention_over_configuration) and
 [KISS](http://en.wikipedia.org/wiki/KISS_principle).
 
-For example, this is what a local transform looks like using Canari:
+For example, this is what a transform looks like using Canari:
 
 ```python
 #!/usr/bin/env python
