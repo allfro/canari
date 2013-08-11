@@ -3,6 +3,7 @@
 from distutils.command.install import install
 from pkg_resources import resource_filename
 from distutils.dist import Distribution
+from distutils.version import LooseVersion
 from datetime import datetime
 from string import Template
 import unicodedata
@@ -109,6 +110,13 @@ def detect_settings_dir():
     else:
         raise NotImplementedError('Unknown or unsupported OS: %s' % repr(sys.platform))
     return d
+
+
+def maltego_version(d):
+    if not d or os.path.sep not in d:
+        raise Exception('Must supply the full path to the Maltego settings directory in order to determine version.')
+    version = os.path.basename(d)
+    return LooseVersion(version[1:]) if version.startswith('v') else LooseVersion(version)
 
 
 def sudo(args):
