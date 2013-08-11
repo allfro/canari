@@ -13,9 +13,16 @@ __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
 __all__ = [
-    'modulecallee'
+    'calling_module',
+    'calling_package'
 ]
 
-def modulecallee(atframe=2):
-    frame = stack()[atframe]
+
+def calling_module(frame=2):
+    frame = stack()[frame]
     return getmodule(frame[0])
+
+
+def calling_package(frame=2):
+    frame = stack()[frame]
+    return getmodule(frame[0]).__name__.split('.')[0]

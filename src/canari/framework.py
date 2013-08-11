@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-from subprocess import PIPE, Popen
 
 from canari.resource import external_resource
-from canari.utils.stack import modulecallee
+from canari.utils.stack import calling_package
 
+from subprocess import PIPE, Popen
 import os
 import re
 
@@ -35,7 +35,6 @@ def deprecated(f):
 
 
 class configure(object):
-
     def __init__(self, **kwargs):
         diff = set(['label', 'uuids', 'inputs']).difference(kwargs)
         if diff:
@@ -58,20 +57,21 @@ class configure(object):
 
 
 class ExternalCommand(object):
-
-    def __init__(self, transform_name, transform_args=[], interpreter=None, is_resource=True):
+    def __init__(self, transform_name, transform_args=None, interpreter=None, is_resource=True):
+        if transform_args is None:
+            transform_args = []
         self._extra_external_args = []
 
         if interpreter is not None:
             self._extra_external_args.append(interpreter)
             libpath = external_resource(
                 os.path.dirname(transform_name),
-                '%s.resources.external' % modulecallee().__name__.split('.')[0]
+                '%s.resources.external' % calling_package()
             )
             if interpreter.startswith('perl') or interpreter.startswith('ruby'):
-                self._extra_external_args.extend([ '-I', libpath ])
+                self._extra_external_args.extend(['-I', libpath])
             elif interpreter.startswith('java'):
-                self._extra_external_args.extend([ '-cp', libpath ])
+                self._extra_external_args.extend(['-cp', libpath])
 
         if ' ' in transform_name:
             raise ValueError('Transform name %s cannot have spaces.' % repr(transform_name))
@@ -81,12 +81,12 @@ class ExternalCommand(object):
             self._extra_external_args.append(
                 external_resource(
                     transform_name,
-                    '%s.resources.external' % modulecallee().__name__.split('.')[0]
+                    '%s.resources.external' % calling_package()
                 )
             )
 
         if isinstance(transform_args, basestring):
-            self._extra_external_args = re.split('\s+', transform_args)
+            self._extra_external_args = re.split(r'\s+', transform_args)
         else:
             self._extra_external_args.extend(transform_args)
 
