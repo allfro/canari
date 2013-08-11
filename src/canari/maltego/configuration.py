@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import time
 
 from canari.xmltools.oxml import XMLAttribute, XSAttributeType, XMLSubElement, XSSubElementType
 from message import MaltegoElement
@@ -33,7 +34,10 @@ __all__ = [
     'CmdDbgTransformProperty',
     'CmdDbgTransformPropertySetting',
     'TransformSettings',
-    'TransformSet'
+    'Set',
+    'MaltegoServer',
+    'Authentication',
+    'Protocol'
 ]
 
 
@@ -87,7 +91,7 @@ class MaltegoTransform(MaltegoElement):
         self.appendelements(kwargs.get('properties'))
 
     def appendelement(self, other):
-        if isinstance(other, TransformSet):
+        if isinstance(other, Set):
             self.sets += other
         elif isinstance(other, TransformProperty):
             self.properties += other
@@ -97,7 +101,7 @@ class MaltegoTransform(MaltegoElement):
             self.output += other
 
     def removeelement(self, other):
-        if isinstance(other, TransformSet):
+        if isinstance(other, Set):
             self.sets -= other
         if isinstance(other, TransformProperty):
             self.properties -= other
@@ -127,20 +131,41 @@ class BuiltInTransformSets(object):
 
 
 @XMLAttribute(name='name')
-class TransformSet(MaltegoElement):
+class Set(MaltegoElement):
 
     def __init__(self, name):
-        super(MaltegoElement, self).__init__('Set')
+        super(Set, self).__init__(self.__class__.__name__)
         self.name = name
+
+
+@XMLAttribute(name='name')
+@XMLAttribute(name='description', default='')
+@XMLSubElement(name='Transforms', propname='transforms', type=XSSubElementType.List)
+class TransformSet(MaltegoElement):
+
+    def __init__(self, name, **kwargs):
+        super(TransformSet, self).__init__(self.__class__.__name__)
+        self.name = name
+        self.description = kwargs.get('description', self.description)
+        self.appendelements(kwargs.get('transforms'))
+
+    def appendelement(self, other):
+        if isinstance(other, Transform):
+            self.transforms += other
+
+    def removeelement(self, other):
+        if isinstance(other, Transform):
+            self.transforms -= other
 
 
 @XMLAttribute(name='max', type=XSAttributeType.Integer, default=1)
 @XMLAttribute(name='min', type=XSAttributeType.Integer, default=1)
 @XMLAttribute(name='type')
 class InputConstraint(MaltegoElement):
-    def __init__(self, type, **kwargs):
+
+    def __init__(self, type_, **kwargs):
         super(InputConstraint, self).__init__('Entity')
-        self.type = type
+        self.type = type_
         self.min = kwargs.get('min', self.min)
         self.max = kwargs.get('max', self.max)
 
@@ -290,3 +315,62 @@ class TransformSettings(MaltegoElement):
     def removeelement(self, other):
         if isinstance(other, TransformPropertySetting):
             self.properties -= other
+
+
+
+@XMLAttribute(name='version', default=0.0, type=XSAttributeType.Float)
+class Protocol(MaltegoElement):
+
+    def __init__(self, **kwargs):
+        super(Protocol, self).__init__(self.__class__.__name__)
+        self.version = kwargs.get('version', self.version)
+
+
+@XMLAttribute(name='type', default='none')
+class Authentication(MaltegoElement):
+
+    def __init__(self, **kwargs):
+        super(Authentication, self).__init__(self.__class__.__name__)
+        self.type = kwargs.get('type', self.type)
+
+
+@XMLAttribute(name='name')
+class Transform(MaltegoElement):
+
+    def __init__(self, name):
+        super(Transform, self).__init__(self.__class__.__name__)
+        self.name = name
+
+
+@XMLAttribute(name='name', default='Local')
+@XMLAttribute(name='enabled', type=XSAttributeType.Bool, default=True)
+@XMLAttribute(name='description', default='Local transforms hosted on this machine')
+@XMLAttribute(name='url', default='http://localhost')
+@XMLSubElement(name='LastSync', propname='lastsync', default=time.strftime('%Y-%m-%d %X.000 %Z'))
+@XMLSubElement(name='Transforms', propname='transforms', type=XSSubElementType.List)
+class MaltegoServer(MaltegoElement):
+
+    def __init__(self, **kwargs):
+        super(MaltegoServer, self).__init__(self.__class__.__name__)
+        self.name = kwargs.get('name', self.name)
+        self.enabled = kwargs.get('enabled', self.enabled)
+        self.description = kwargs.get('description', self.description)
+        self.url = kwargs.get('url', self.url)
+        self.lastsync = kwargs.get('lastsync', self.lastsync)
+        self.appendelements(kwargs.get('protocol'))
+        self.appendelements(kwargs.get('authentication'))
+        self.appendelements(kwargs.get('transforms'))
+
+    def appendelement(self, other):
+        if isinstance(other, Transform):
+            self.transforms += other
+        elif isinstance(other, Protocol) or isinstance(other, Authentication):
+            self.append(other)
+
+    def removeelement(self, other):
+        if isinstance(other, Transform):
+            self.transforms -= other
+        elif isinstance(other, Protocol) or isinstance(other, Authentication):
+            self.remove(other)
+
+
