@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from common import detect_settings_dir, cmd_name, fix_pypath, import_package, import_transform, fix_etree
+from common import detect_settings_dir, cmd_name, fix_pypath, import_package, import_transform, fix_etree, maltego_version
 
 from xml.etree.cElementTree import ElementTree, XML
 from os import path, mkdir, listdir, unlink, rmdir
@@ -108,6 +108,16 @@ def parse_args(args):
     args = parser.parse_args(args)
     if args.settings_dir is detect_settings_dir:
         args.settings_dir = detect_settings_dir()
+    if maltego_version(args.settings_dir) >= '3.4.0':
+        print("""
+=========================== ERROR: NOT SUPPORTED ===========================
+
+ Starting from Maltego v3.4.0 the 'canari uninstall-package' command is no
+ longer supported. Please use the Maltego interface to uninstall packages.
+
+=========================== ERROR: NOT SUPPORTED ===========================
+        """)
+        exit(-1)
     return args
 
 

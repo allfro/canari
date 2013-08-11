@@ -11,10 +11,10 @@ from zipfile import ZipFile
 from string import Template
 
 from canari.maltego.configuration import  (MaltegoTransform, CmdCwdTransformProperty, CmdDbgTransformProperty,
-                               CmdLineTransformProperty, CmdParmTransformProperty, InputConstraint, TransformSet,
+                               CmdLineTransformProperty, CmdParmTransformProperty, InputConstraint, Set,
                                TransformSettings, CmdCwdTransformPropertySetting, CmdDbgTransformPropertySetting,
                                CmdLineTransformPropertySetting, CmdParmTransformPropertySetting)
-from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir, import_transform, import_package, fix_etree
+from common import detect_settings_dir, cmd_name, fix_pypath, get_bin_dir, import_transform, import_package, fix_etree, maltego_version
 from canari.maltego.message import ElementTree
 
 
@@ -79,6 +79,31 @@ def parse_args(args):
             print "Make sure you've run Maltego for the first time and activated your license."
             exit(-1)
 
+    if maltego_version(args.settings_dir) >= '3.4.0':
+        print("""
+=========================== ERROR: NOT SUPPORTED ===========================
+
+ Starting from Maltego v3.4.0 the 'canari install-package' command is no
+ longer supported. Please use the 'canari create-profile' command, instead.
+ This will create an importable config file (*.mtz) which can be imported
+ using the 'Import Configuration' option in Maltego. This option can be
+ found by clicking on the <Maltego icon> in the top left corner of your
+ Maltego window then scrolling to 'Import' then 'Import Configuration'.
+
+ NOTE: This command will automatically install and configure the
+ 'canari.conf' file for you in the default location for your OS.
+
+ EXAMPLE:
+
+ shell> canari create-profile sploitego
+ ...
+ shell> ls
+ sploitego.mtz <--- Import this file
+
+=========================== ERROR: NOT SUPPORTED ===========================
+        """)
+        exit(-1)
+
     args.working_dir = os.path.realpath(args.working_dir)
     return args
 
@@ -109,7 +134,7 @@ def install_transform(module, name, author, spec, prefix, working_dir):
             if not os.path.exists(setdir):
                 os.mkdir(setdir)
             open(os.path.join(setdir, n), 'w').close()
-            sets=TransformSet(spec.inputs[i][0])
+            sets=Set(spec.inputs[i][0])
 
         transform = MaltegoTransform(
             n,
@@ -305,6 +330,7 @@ def run(args):
         opts.package = opts.package.replace('.transforms', '')
 
     try:
+        print('Writing canari.config to %s...' % opts.working_dir)
         installconf(opts, args)
     except ImportError:
         pass
@@ -314,7 +340,8 @@ def run(args):
     try:
         m = import_package('%s.transforms' % opts.package)
     except ImportError, e:
-        print ("Does not appear to be a valid canari package. Couldn't import the '%s.transforms' package in '%s'. Error message: %s" % (opts.package, opts.package, e))
+        print ("Does not appear to be a valid canari package. "
+               "Couldn't import the '%s.transforms' package in '%s'. Error message: %s" % (opts.package, opts.package, e))
         exit(-1)
 
     for t in m.__all__:
