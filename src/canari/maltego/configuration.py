@@ -10,7 +10,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -42,8 +42,8 @@ __all__ = [
 
 
 class TransformAdapter(object):
-    Local ='com.paterva.maltego.transform.protocol.v2.LocalTransformAdapterV2'
-    Remote ='com.paterva.maltego.transform.protocol.v2.RemoteTransformAdapterV2'
+    Local = 'com.paterva.maltego.transform.protocol.v2.LocalTransformAdapterV2'
+    Remote = 'com.paterva.maltego.transform.protocol.v2.RemoteTransformAdapterV2'
 
 
 @XMLAttribute(name='abstract', type=XSAttributeType.Bool, default=False)
