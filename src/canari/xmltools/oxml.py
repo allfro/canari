@@ -12,7 +12,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -134,7 +134,7 @@ class XSLongAttribute(XSStringAttribute):
         super(XSLongAttribute, self).__set__(obj, val)
 
 
-class XSAttributeType(object):
+class XSAttributeType:
     String = XSStringAttribute
     Float = XSFloatAttribute
     Integer = XSIntegerAttribute
@@ -165,11 +165,12 @@ class XMLAttribute(object):
 
 class XSStringSubElement(object):
 
-    def __init__(self, name, default=None):
+    def __init__(self, name, default=None, decorator=None):
         self.name = name
         if default is not None and not isinstance(default, basestring):
             default = str(default)
         self.default = default
+        self.decorator = decorator
 
     def __get__(self, obj, objtype):
         e = obj.find(self.name)
@@ -184,6 +185,7 @@ class XSStringSubElement(object):
         return e.text
 
     def __set__(self, obj, val):
+        oval = val
         if val is None:
             e = obj.find(self.name)
             if e is not None:
@@ -195,19 +197,21 @@ class XSStringSubElement(object):
         if not isinstance(val, basestring):
             val = str(val)
         obj.findelement(self.name).text = val
+        if callable(self.decorator):
+            self.decorator(obj, oval)
 
 
 class XSCDataSubElement(XSStringSubElement):
 
-    def __init__(self, name, default=None):
-        super(XSCDataSubElement, self).__init__('%s/CDATA' % name, default)
+    def __init__(self, name, default=None, decorator=None):
+        super(XSCDataSubElement, self).__init__('%s/CDATA' % name, default, decorator)
 
 
 class XSEnumSubElement(XSStringSubElement):
 
-    def __init__(self, name, choices, default=None):
+    def __init__(self, name, choices, default=None, decorator=None):
         self.choices = [ str(c) if not isinstance(c, basestring) else c for c in choices ]
-        super(XSEnumSubElement, self).__init__(name, default)
+        super(XSEnumSubElement, self).__init__(name, default, decorator)
 
     def __set__(self, obj, val):
         if not isinstance(val, basestring):
@@ -230,8 +234,8 @@ class XSIntegerSubElement(XSStringSubElement):
 
 class XSBooleanSubElement(XSStringSubElement):
 
-    def __init__(self, name, default=False):
-        super(XSBooleanSubElement, self).__init__(name, str(default).lower())
+    def __init__(self, name, default=False, decorator=None):
+        super(XSBooleanSubElement, self).__init__(name, str(default).lower(), decorator)
 
     def __get__(self, obj, objtype):
         return super(XSBooleanSubElement, self).__get__(obj, objtype) == 'true'
@@ -273,7 +277,7 @@ class XSListSubElement(object):
         return obj.findelement(self.name)
 
 
-class XSSubElementType(object):
+class XSSubElementType:
     String = XSStringSubElement
     Float = XSFloatSubElement
     Integer = XSIntegerSubElement
@@ -292,17 +296,18 @@ class XMLSubElement(object):
             raise ValueError("Keyword argument 'name' is required.")
         self.property = kwargs.get('propname', sub('[^\w]+', '_', self.name))
         self.type = kwargs.get('type', XSSubElementType.String)
-        self.default = kwargs.get('default', None)
+        self.default = kwargs.get('default')
         self.required = kwargs.get('required', False)
         self.choices = kwargs.get('choices')
+        self.decorator = kwargs.get('decorator')
 
     def __call__(self, cls):
         if self.type is XSSubElementType.Enum:
-            setattr(cls, self.property, self.type(self.name, self.choices, self.default))
+            setattr(cls, self.property, self.type(self.name, self.choices, self.default, self.decorator))
         elif self.type is XSSubElementType.List:
             setattr(cls, self.property, self.type(self.name))
         else:
-            setattr(cls, self.property, self.type(self.name, self.default))
+            setattr(cls, self.property, self.type(self.name, self.default, self.decorator))
         return cls
 
 
