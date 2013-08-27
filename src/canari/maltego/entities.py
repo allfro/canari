@@ -7,23 +7,23 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
 __all__ = [
     'Affiliation',
-    'AffiliationBebo',
-    'AffiliationFacebook',
-    'AffiliationFlickr',
-    'AffiliationLinkedin',
-    'AffiliationMySpace',
-    'AffiliationOrkut',
-    'AffiliationSpock',
-    'AffiliationTwitter',
-    'AffiliationWikiEdit',
-    'AffiliationZoominfo',
+    'Bebo',
+    'Facebook',
+    'Flickr',
+    'Linkedin',
+    'MySpace',
+    'Orkut',
+    'Spock',
+    'Twitter',
+    'WikiEdit',
+    'Zoominfo',
     'Alias',
     'AS',
     'Banner',
@@ -50,14 +50,18 @@ __all__ = [
     'Service',
     'Twit',
     'URL',
-    'Vuln',
+    'Vulnerability',
     'Webdir',
     'Website',
     'WebTitle'
 ]
 
 
-@EntityField(name='properties.gps', displayname='GPS Co-ordinate')
+class Unknown(Entity):
+    pass
+
+
+@EntityField(name='properties.gps', propname='gps', displayname='GPS Co-ordinate', is_value=True)
 @EntityField(name='latitude', displayname='Latitude', type=EntityFieldType.Float)
 @EntityField(name='longitude', displayname='Longitude', type=EntityFieldType.Float)
 class GPS(Entity):
@@ -75,128 +79,169 @@ class BuiltWithTechnology(Entity):
 
 
 
-@EntityField(name='fqdn', displayname='Domain Name')
-@EntityField(name='whois', displayname='WHOIS Info')
+@EntityField(name='fqdn', displayname='Domain Name', is_value=True)
+@EntityField(name='whois-info', propname='whois_info', displayname='WHOIS Info')
 class Domain(Entity):
-    pass
+    _v2type_ = 'Domain'
+    _fields_to_properties_ = {
+        'whois': 'whois_info'
+    }
 
 
-@EntityField(name='fqdn', displayname='DNS Name')
+@EntityField(name='fqdn', displayname='DNS Name', is_value=True)
 class DNSName(Entity):
-    pass
+    _v2type_ = 'DNSName'
 
 
-@EntityField(name='fqdn', displayname='MX Record')
-@EntityField(name='mxrecord.priority', propname='mxpriority', type=EntityFieldType.Integer)
-class MXRecord(Entity):
-    pass
+@EntityField(name='mxrecord.priority', propname='priority', type=EntityFieldType.Integer)
+class MXRecord(DNSName):
+    _v2type_ = 'MXRecord'
 
 
-@EntityField(name='fqdn', displayname='NS Record')
-class NSRecord(Entity):
-    pass
+class NSRecord(DNSName):
+    _v2type_ = 'NSRecord'
 
 
-@EntityField(name='ipv4-address', propname='ipv4address', displayname='IP Address')
+@EntityField(name='ipv4-address', propname='ipv4address', displayname='IP Address', is_value=True)
 @EntityField(name='ipaddress.internal', propname='internal', displayname='Internal', type=EntityFieldType.Bool)
 class IPv4Address(Entity):
-    pass
+    _v2type_ = 'IPAddress'
 
 
-@EntityField(name='ipv4-range', propname='ipv4range', displayname='IP Range')
+@EntityField(name='ipv4-range', propname='ipv4range', displayname='IP Range', is_value=True)
 class Netblock(Entity):
-    pass
+    _v2type_ = 'Netblock'
 
 
-@EntityField(name='as.number', propname='number', displayname='AS Number', type=EntityFieldType.Integer)
+@EntityField(name='as.number', propname='number', displayname='AS Number', type=EntityFieldType.Integer, is_value=True)
 class AS(Entity):
-    pass
+    _v2type_ = 'ASNumber'
 
 
-@EntityField(name='website.ssl-enabled', displayname='SSL Enabled', type=EntityFieldType.Bool)
-@EntityField(name='fqdn', displayname='Website')
+@EntityField(name='website.ssl-enabled', propname='ssl_enabled', displayname='SSL Enabled', type=EntityFieldType.Bool)
+@EntityField(name='fqdn', displayname='Website', is_value=True)
 @EntityField(name='ports', displayname='Ports', type=EntityFieldType.Integer)
 class Website(Entity):
-    pass
+    _v2type_ = 'Website'
 
 
-@EntityField(name='maltego.v2.value.property', propname='shorttitle', displayname='Short title')
-@EntityField(name='theurl', propname='url', displayname='URL')
-@EntityField(name='fulltitle', displayname='Title')
+@EntityField(name='short-title', propname='short_title', displayname='Short title', is_value=True)
+@EntityField(name='url', displayname='URL')
+@EntityField(name='title', displayname='Title')
 class URL(Entity):
-    pass
+    _v2type_ = 'URL'
+    _fields_to_properties_ = {
+        'maltego.v2.value.property': 'shorttitle',
+        'theurl': 'url',
+        'fulltitle': 'title'
+    }
 
 
-@EntityField(name='text', displayname='Text')
+@EntityField(name='text', displayname='Text', is_value=True)
 class Phrase(Entity):
-    pass
+    _v2type_ = 'Phrase'
 
 
-@EntityField(name='maltego.v2.value.property', propname='title', displayname='Title')
-@EntityField(name='link', propname='url', displayname='URL')
-@EntityField(name='metainfo', propname='metadata', displayname='Meta-Data')
+@EntityField(name='title', displayname='Title')
+@EntityField(name='url', displayname='URL', is_value=True)
+@EntityField(name='document.metadata', propname='metadata', displayname='Meta-Data')
 class Document(Entity):
-    pass
+    _v2type_ = 'Document'
+    _fields_to_properties_ = {
+        'maltego.v2.value.property': 'title',
+        'link': 'url',
+        'metainfo': 'metadata'
+    }
 
 
-@EntityField(name='lastname', propname='lastname', displayname='Surname')
-@EntityField(name='firstname', propname='firstnames', displayname='First Names')
-@EntityField(name='person.fullname', propname='fullname', displayname='Full Name')
+@EntityField(name='person.lastname', propname='lastname', displayname='Surname')
+@EntityField(name='person.firstnames', propname='firstnames', displayname='First Names')
+@EntityField(name='person.fullname', propname='fullname', displayname='Full Name', is_value=True)
 class Person(Entity):
-    pass
+    _v2type_ = 'Person'
+    _fields_to_properties_ = {
+        'lastname': 'lastname',
+        'firstname': 'firstnames'
+    }
 
 
-@EntityField(name='email', displayname='Email Address')
+@EntityField(name='email', displayname='Email Address', is_value=True)
 class EmailAddress(Entity):
-    pass
+    _v2type_ = 'EmailAddress'
 
 
 @EntityField(name='content', displayname='Content')
 @EntityField(name='pubdate', displayname='Date published')
-@EntityField(name='imglink', displayname='Image Link')
+@EntityField(name='img_link', displayname='Image Link')
 @EntityField(name='author', displayname='Author')
 @EntityField(name='title', displayname='Title')
-@EntityField(name='author_uri', propname='authoruri', displayname='Author URI')
-@EntityField(name='twit.name', propname='twitname', displayname='Twit')
+@EntityField(name='author_uri', displayname='Author URI')
+@EntityField(name='twit.name', propname='name', displayname='Twit', is_value=True)
 @EntityField(name='id', displayname='Twit ID')
 class Twit(Entity):
-    pass
+    _v2type_ = 'Twit'
+    _fields_to_properties_ = {
+        'imglink': 'img_link'
+    }
 
 
-@EntityField(name='person.name', propname='name', displayname='Name')
-@EntityField(name='uid', displayname='UID')
-@EntityField(name='network', displayname='Network')
-@EntityField(name='profile_url', propname='profileurl', displayname='Profile URL')
+@EntityField(name='person.name', propname='person_name', displayname='Name', is_value=True)
+@EntityField(name='affiliation.uid', propname='uid', displayname='UID')
+@EntityField(name='affiliation.network', propname='network', displayname='Network')
+@EntityField(name='affiliation.profile-url', propname='profile_url', displayname='Profile URL')
 class Affiliation(Entity):
+    _namespace_ = 'maltego.affiliation'
+    _fields_to_properties_ = {
+        'network': 'network',
+        'uid': 'uid',
+        'profile_url': 'profile_url'
+    }
+
+
+class Bebo(Affiliation):
+    _v2type_ = 'AffiliationBebo'
+
+
+class Facebook(Affiliation):
+    _v2type_ = 'AffiliationFacebook'
+
+
+class Flickr(Affiliation):
+    _v2type_ = 'AffiliationFlickr'
+
+
+class Linkedin(Affiliation):
+    _v2type_ = 'AffiliationLinkedin'
+
+
+class MySpace(Affiliation):
+    _v2type_ = 'AffiliationMySpace'
+
+
+class Orkut(Affiliation):
+    _v2type_ = 'AffiliationOrkut'
+
+
+@EntityField(name='twitter.number', propname='number', displayname='Twitter Number', type=EntityFieldType.Integer)
+@EntityField(name='twitter.screen-name', propname='screenname', displayname='Screen Name')
+@EntityField(name='twitter.friendcount', propname='friendcount', displayname='Friend Count',
+             type=EntityFieldType.Integer)
+@EntityField(name='person.fullname', propname='fullname', displayname='Real Name')
+class Twitter(Affiliation):
+    _v2type_ = 'AffiliationTwitter'
+
+
+class Zoominfo(Affiliation):
     pass
 
 
-class AffiliationBebo(Affiliation):
+class WikiEdit(Affiliation):
     pass
 
 
-class AffiliationFacebook(Affiliation):
-    name = "affiliation.Facebook"
-
-
-class AffiliationFlickr(Affiliation):
-    name = "affiliation.Flickr"
-
-
-class AffiliationLinkedin(Affiliation):
-    pass
-
-
-class AffiliationMySpace(Affiliation):
-    pass
-
-
-class AffiliationOrkut(Affiliation):
-    pass
-
-
-class AffiliationSpock(Affiliation):
-    pass
+@EntityField(name='spock.websites', propname='websites', displayname='Listed Websites')
+class Spock(Affiliation):
+    _v2type_ = 'AffiliationSpock'
 
 
 @EntityField(name='properties.facebookobject', propname='object', displayname='Facebook Object')
@@ -204,47 +249,43 @@ class FacebookObject(Entity):
     pass
 
 
-@EntityField(name='twitter.number', propname='number', displayname='Twitter Number', type=EntityFieldType.Integer)
-@EntityField(name='twitter.screen-name', propname='screenname', displayname='Screen Name')
-@EntityField(name='twitter.friendcount', propname='friendcount', displayname='Friend Count', type=EntityFieldType.Integer)
-@EntityField(name='person.fullname', propname='fullname', displayname='Real Name')
-class AffiliationTwitter(Affiliation):
-    name = "affiliation.Twitter"
-
-
-class AffiliationZoominfo(Affiliation):
-    pass
-
-
-class AffiliationWikiEdit(Affiliation):
-    pass
-
-
 @EntityField(name='city', displayname='City')
-@EntityField(name='countrysc', propname='countrycode', displayname='Country Code')
-@EntityField(name='area', displayname='Area')
+@EntityField(name='countrycode', displayname='Country Code')
+@EntityField(name='location.area', propname='area', displayname='Area')
 @EntityField(name='country', displayname='Country')
-@EntityField(name='long', propname='longitude', displayname='Longitude', type=EntityFieldType.Float)
-@EntityField(name='lat', propname='latitude', displayname='Latitude', type=EntityFieldType.Float)
+@EntityField(name='longitude', displayname='Longitude', type=EntityFieldType.Float)
+@EntityField(name='latitude', displayname='Latitude', type=EntityFieldType.Float)
 @EntityField(name='streetaddress', displayname='Street Address')
-@EntityField(name='location.areacode', displayname='Area Code')
-@EntityField(name='location.name', propname='locationname', displayname='Name')
+@EntityField(name='location.areacode', propname='areacode', displayname='Area Code')
+@EntityField(name='location.name', propname='name', displayname='Name', is_value=True)
 class Location(Entity):
-    pass
+    _v2type_ = 'Location'
+    _fields_to_properties_ = {
+        'countrysc': 'countrycode',
+        'area': 'area',
+        'long': 'longitude',
+        'lat': 'latitude'
+    }
 
 
-@EntityField(name='properties.nominatimlocation', propname='nominatim', displayname='Nominatim Location')
+@EntityField(name='properties.nominatimlocation', propname='nominatim', displayname='Nominatim Location', is_value=True)
 class NominatimLocation(Entity):
     pass
 
 
-@EntityField(name='areacode', displayname='Area Code')
-@EntityField(name='lastnumbers', displayname='Last Digits')
-@EntityField(name='citycode', displayname='City Code')
-@EntityField(name='phonenumber', displayname='Phone Number')
-@EntityField(name='countrycode', displayname='Country Code')
+@EntityField(name='phonenumber.areacode', propname='areacode', displayname='Area Code')
+@EntityField(name='phonenumber.lastnumbers', propname='lastnumbers', displayname='Last Digits')
+@EntityField(name='phonenumber.citycode', propname='citycode', displayname='City Code')
+@EntityField(name='phonenumber', displayname='Phone Number', is_value=True)
+@EntityField(name='phonenumber.countrycode', propname='countrycode', displayname='Country Code')
 class PhoneNumber(Entity):
-    pass
+    _v2type_ = 'PhoneNumber'
+    _fields_to_properties_ = {
+        'countrycode': 'countrycode',
+        'citycode': 'citycode',
+        'areacode': 'areacode',
+        'lastnumbers': 'lastnumbers'
+    }
 
 
 @EntityField(name='properties.alias', propname='alias', displayname='Alias')
@@ -264,26 +305,33 @@ class File(Entity):
     pass
 
 
+@EntityField(name='banner.text', propname='text', displayname='Banner', is_value=True)
 class Banner(Entity):
-    pass
+    _v2type_ = 'Banner'
 
 
+@EntityField(name='port.number', propname='number', displayname='Ports', is_value=True)
 class Port(Entity):
-    pass
+    _v2type_ = 'Port'
 
 
+@EntityField(name='service.name', propname='name', displayname='Description', is_value=True)
+@EntityField(name='banner.text', propname='banner', displayname='Service Banner')
+@EntityField(name='port.number', propname='port', displayname='Ports')
 class Service(Entity):
-    pass
+    _v2type_ = 'Service'
 
 
-class Vuln(Entity):
-    pass
+@EntityField(name='vulnerability.id', propname='id', displayname='ID', is_value=True)
+class Vulnerability(Entity):
+    _v2type_ = 'Vuln'
 
 
+@EntityField(name='directory.name', propname='name', displayname='Name', is_value=True)
 class Webdir(Entity):
-    pass
+    _v2type_ = 'Webdir'
 
 
-@EntityField(name='title', displayname='Title')
+@EntityField(name='title', displayname='Title', is_value=True)
 class WebTitle(Entity):
-    pass
+    _v2type_ = 'WebTitle'
