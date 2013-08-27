@@ -11,6 +11,8 @@ import sys
 import os
 import re
 
+__version__ = '0.2'
+
 # Third-party imports
 from flask import Flask, Response, request
 
@@ -59,7 +61,8 @@ class Canari(Flask):
         try:
             packages = _config.config['remote/modules']
         except NoSectionError:
-            sys.stderr.write('Exiting... You did not specify a [remote] section and a "modules" option in your canari.conf file!')
+            sys.stderr.write('Exiting... You did not specify a [remote] section and a "modules" '
+                             'option in your canari.conf file!')
             exit(-1)
 
         # Is packages not blank
@@ -86,47 +89,48 @@ class Canari(Flask):
             # Load our first transform package
             m = importlib.import_module(p)
 
-            for t in m.__all__:
-                t = ('%s.%s' % (p, t))
+            for transform_name in m.__all__:
+                transform_name = ('%s.%s' % (p, transform_name))
 
                 # Let's import our transforms one by one
-                m2 = importlib.import_module(t)
-                if not hasattr(m2, 'dotransform'):
+                transform_module = importlib.import_module(transform_name)
+                if not hasattr(transform_module, 'dotransform'):
                     continue
 
                 # Should the transform be publicly available?
-                if hasattr(m2.dotransform, 'remote') and m2.dotransform.remote:
-                    sys.stderr.write('Loading transform %s at /%s...\n' % (repr(t), t))
+                if hasattr(transform_module.dotransform, 'remote') and transform_module.dotransform.remote:
+                    sys.stderr.write('Loading transform %s at /%s...\n' % (repr(transform_name), transform_name))
                     # Does it conform to V2 of the Canari transform signature standard?
-                    if get_transform_version(m2.dotransform) == 2:
-                        sys.stderr.write('Plume does not support V2 Canari transforms (%s). Please update to V3. '
-                                         'See http://www.canariproject.com/plume for details.\n' % repr(t))
+                    if get_transform_version(transform_module.dotransform) == 2:
+                        sys.stderr.write('ERROR: Plume does not support V2 Canari transforms (%s). Please update to V3.'
+                                         ' See http://www.canariproject.com/4-3-transform-development-quick-start/ for'
+                                         ' more details.\n' % repr(transform_name))
                         exit(-1)
                     # Does the transform need to be executed as root? If so, is this running in mod_wsgi? Yes = Bad!
-                    elif os.name == 'posix' and hasattr(m2.dotransform, 'privileged') and\
-                       os.geteuid() and __name__.startswith('_mod_wsgi_'):
-                        sys.stderr.write('Warning, mod_wsgi does not allow applications to run with root privileges. '
-                                         'Transform %s ignored...\n' % repr(t))
+                    elif os.name == 'posix' and hasattr(transform_module.dotransform, 'privileged') and \
+                            os.geteuid() and __name__.startswith('_mod_wsgi_'):
+                        sys.stderr.write('WARNING: mod_wsgi does not allow applications to run with root privileges. '
+                                         'Transform %s ignored...\n' % repr(transform_name))
                         continue
                     # So everything is good, let's register our transform with the global transform registry.
-                    if hasattr(m2.dotransform, 'inputs'):
-                        inputs = [e[1]('').type for e in m2.dotransform.inputs]
-                        inputs = inputs + [i.split('.')[-1] for i in inputs]
-                        self.transforms[t] = (m2.dotransform, inputs)
-                    else:
-                        self.transforms[t] = (m2.dotransform, [])
+                    inputs = {}
+                    if hasattr(transform_module.dotransform, 'inputs'):
+                        for category, entity_type in transform_module.dotransform.inputs:
+                            inputs[entity_type.type] = entity_type
+                            inputs[entity_type._v2type_] = entity_type
+                    self.transforms[transform_name] = (transform_module.dotransform, inputs)
 
 
 # Create our Flask app.
 app = Canari(__name__)
+
 
 def croak(error_msg):
     """Throw an exception in the Maltego GUI containing error_msg."""
     s = StringIO()
     Message(
         MaltegoMessage(
-            MaltegoTransformExceptionMessage(exceptions=MaltegoException(error_msg)
-            )
+            MaltegoTransformExceptionMessage(exceptions=MaltegoException(error_msg))
         )
     ).write(file=s)
     return s.getvalue()
@@ -159,7 +163,7 @@ def message(m):
     return Response(re.sub(r'(&#\d{5};){2}', r'', v), status=200, mimetype='text/html')
 
 
-def dotransform(t):
+def dotransform(transform, valid_input_entity_types):
     try:
         # Get the body of the request
         request_str = request.data
@@ -169,9 +173,9 @@ def dotransform(t):
 
         # Get the entity being passed in.
         e = xml.find('Entities/Entity')
-        etype = e.get('Type', '')
+        entity_type = e.get('Type', '')
 
-        if t[1] and etype not in t[1]:
+        if valid_input_entity_types and entity_type not in valid_input_entity_types:
             return Response(status=404)
 
         # Initialize Maltego Request values to pass into transform
@@ -191,9 +195,9 @@ def dotransform(t):
         config._sections.update(_config.config._sections)
 
         # Execute it!
-        msg = t[0](
+        msg = transform(
             MaltegoTransformRequestMessage(value, fields, params, limits),
-            request_str if hasattr(t[0], 'cmd') and callable(t[0].cmd) else MaltegoTransformResponseMessage(),
+            request_str if hasattr(transform, 'cmd') and callable(transform.cmd) else MaltegoTransformResponseMessage(),
             config
         )
 
@@ -211,19 +215,19 @@ def dotransform(t):
 
 
 # This is where the TDS will ask: "Are you a transform?" and we say "200 - Yes I am!" or "404 - PFO"
-@app.route('/<transform>', methods=['GET'])
-def transform_checker(transform):
-    if transform not in app.transforms:
+@app.route('/<transform_name>', methods=['GET'])
+def transform_checker(transform_name):
+    if transform_name not in app.transforms:
         return Response(status=404)
     return Response(status=200)
 
 
 # This is where we process a transform request.
-@app.route('/<transform>', methods=['POST'])
-def transform_runner(transform):
-    if transform not in app.transforms:
+@app.route('/<transform_name>', methods=['POST'])
+def transform_runner(transform_name):
+    if transform_name not in app.transforms:
         return Response(status=400)
-    return dotransform(app.transforms[transform])
+    return dotransform(*app.transforms[transform_name])
 
 
 # Finally, if you want to run Flask standalone for debugging, just type python plume.py and you're off to the races!
