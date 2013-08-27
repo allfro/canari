@@ -25,7 +25,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -37,7 +37,7 @@ transformsets = {}
 
 # Argument parser
 parser = ArgumentParser(
-    description="Installs and configures canari transform packages in Maltego's UI",
+    description="Creates an importable Maltego profile (*.mtz) file.",
     usage='canari %s <package> [options]' % cmd_name(__name__)
 )
 
@@ -112,7 +112,7 @@ def write_transform(module, name, author, spec, profile, working_dir):
             print ('Writing transform %s to %s...' % (n, profile.filename))
             transforms[n] = module
 
-        intype = spec.inputs[i][1]('').type
+        intype = spec.inputs[i][1].type
 
         sets = None
         if spec.inputs[i][0] is not None:

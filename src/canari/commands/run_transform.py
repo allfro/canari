@@ -9,7 +9,7 @@ from argparse import ArgumentParser
 from canari.maltego.message import (MaltegoException, MaltegoTransformResponseMessage, UIMessage,
                                     MaltegoTransformRequestMessage)
 from canari.maltego.utils import onterminate, parseargs, croak, message
-from common import cmd_name, import_transform, fix_binpath, sudo, get_transform_version
+from common import cmd_name, import_transform, fix_binpath, sudo, get_transform_version, guess_entity_type, to_entity
 from canari.config import config
 
 
@@ -18,7 +18,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.4'
+__version__ = '0.5'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -54,7 +54,7 @@ parser.add_argument(
 )
 
 
-def help():
+def help_():
     parser.print_help()
 
 
@@ -66,13 +66,13 @@ def run(args):
 
     [transform, params, value, fields] = parseargs(['canari %s' % cmd_name(__name__)] + args)
 
-    m = None
+    transform_module = None
 
     fix_binpath(config['default/path'])
     try:
-        m = import_transform(transform)
+        transform_module = import_transform(transform)
 
-        if os.name == 'posix' and hasattr(m.dotransform, 'privileged') and os.geteuid():
+        if os.name == 'posix' and hasattr(transform_module.dotransform, 'privileged') and os.geteuid():
             rc = sudo(sys.argv)
             if rc == 1:
                 message(MaltegoTransformResponseMessage() + UIMessage('User cancelled transform.'))
@@ -82,16 +82,18 @@ def run(args):
                 message(MaltegoTransformResponseMessage() + UIMessage('Unknown error occurred.'))
             exit(0)
 
-        if hasattr(m, 'onterminate'):
-            onterminate(m.onterminate)
+        if hasattr(transform_module, 'onterminate'):
+            onterminate(transform_module.onterminate)
         else:
-            m.__setattr__('onterminate', lambda *args: exit(-1))
+            transform_module.__setattr__('onterminate', lambda *args: exit(-1))
 
-        msg = m.dotransform(
-            MaltegoTransformRequestMessage(value, fields, params),
+        input_entity = to_entity(guess_entity_type(transform_module, fields), value, fields)
+
+        msg = transform_module.dotransform(
+            MaltegoTransformRequestMessage(value, fields, params, input_entity),
             MaltegoTransformResponseMessage()
-        ) if get_transform_version(m.dotransform) == 2 else m.dotransform(
-            MaltegoTransformRequestMessage(value, fields, params),
+        ) if get_transform_version(transform_module.dotransform) == 2 else transform_module.dotransform(
+            MaltegoTransformRequestMessage(value, fields, params, input_entity),
             MaltegoTransformResponseMessage(),
             config
         )
@@ -110,6 +112,6 @@ def run(args):
     except Exception:
         e = format_exc()
         croak(e)
-    except KeyboardInterrupt, be:
-        if m is not None:
-            m.onterminate()
+    except KeyboardInterrupt:
+        if transform_module is not None:
+            transform_module.onterminate()

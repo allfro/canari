@@ -14,11 +14,10 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.6'
+__version__ = '0.7'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
-
 
 parser = ArgumentParser(
     description='Creates a Canari transform package skeleton.',
@@ -79,7 +78,6 @@ def write_resources(package_name, resources, init, values):
 
 
 def write_common(transforms, init, values):
-
     if values['example']:
         write_template(
             path.join(transforms, '__init__.py'),
@@ -107,7 +105,7 @@ def write_common(transforms, init, values):
     )
 
 
-def help():
+def help_():
     parser.print_help()
 
 
@@ -116,13 +114,13 @@ def description():
 
 
 def ask_user(defaults):
-
     print('Welcome to the Canari transform package wizard.')
 
     if not parse_bool('Would you like to specify authorship information? [Y/n]: '):
         return
 
-    defaults['description'] = raw_input('Project description [%s]: ' % defaults['description']) or defaults['description']
+    defaults['description'] = raw_input('Project description [%s]: ' % defaults['description']) or defaults[
+        'description']
     defaults['example'] = parse_bool('Generate an example transform? [Y/n]: ')
     defaults['author'] = raw_input('Author name [%s]: ' % defaults['author']) or defaults['author']
     defaults['email'] = raw_input('Author email []: ') or ''
@@ -133,25 +131,24 @@ def ask_user(defaults):
 
 
 def run(args):
-
     opts = parser.parse_args(args)
 
     package_name = opts.package
     capitalized_package_name = package_name.capitalize()
 
     values = {
-        'package' : package_name,
-        'entity' : 'My%sEntity' % capitalized_package_name,
-        'base_entity' : '%sEntity' % capitalized_package_name,
-        'project' : capitalized_package_name,
-        'author' : getuser(),
-        'year' : datetime.now().year,
-        'namespace' : package_name,
-        'email' : '',
-        'maintainer' : getuser(),
-        'example' : True,
-        'description' : '',
-        'canari_version' : canari.__version__
+        'package': package_name,
+        'entity': 'My%sEntity' % capitalized_package_name,
+        'base_entity': '%sEntity' % capitalized_package_name,
+        'project': capitalized_package_name,
+        'author': getuser(),
+        'year': datetime.now().year,
+        'namespace': package_name,
+        'email': '',
+        'maintainer': getuser(),
+        'example': True,
+        'description': '',
+        'canari_version': canari.__version__
     }
 
     ask_user(values)
@@ -178,7 +175,6 @@ def run(args):
     else:
         print('A directory with the name %s already exists... exiting' % package_name)
         exit(-1)
-
 
     init = read_template('__init__', values)
 

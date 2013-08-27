@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from distutils.command.install import install
+from canari.maltego.message import EntityField, Field
 from pkg_resources import resource_filename
 from distutils.dist import Distribution
 from distutils.version import LooseVersion
@@ -12,9 +13,11 @@ import threading
 import inspect
 import sys
 import os
+import re
 
 
 from canari.config import CanariConfigParser
+from canari.maltego.entities import Unknown
 
 
 __author__ = 'Nadeem Douba'
@@ -22,7 +25,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.4'
+__version__ = '0.5'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -68,7 +71,7 @@ def get_commands(module='canari.commands'):
     commands = {}
     sc = __import__(module, globals(), locals(), fromlist=['__all__'])
     for c in sc.__all__:
-        m = __import__('%s.%s' % (module, c), globals(), locals(), fromlist=['run', 'help'])
+        m = __import__('%s.%s' % (module, c), globals(), locals(), fromlist=['run', 'help_'])
         if 'run' in m.__dict__:
             commands[cmd_name(m.__name__)] = m
     return commands
@@ -238,18 +241,18 @@ def init_pkg():
             }
 
     return {
-        'author' : '',
-        'email' : '',
-        'maintainer' : '',
-        'project' : '',
-        'year' : datetime.now().year
+        'author': '',
+        'email': '',
+        'maintainer': '',
+        'project': '',
+        'year': datetime.now().year
     }
 
 
 def project_root():
     marker = '.canari'
     for i in range(0, 5):
-        if os.path.exists(marker):
+        if os.path.exists(marker) and os.path.isfile(marker):
             return os.path.dirname(os.path.realpath(marker))
         marker = '..%s%s' % (os.sep, marker)
     print 'Unable to determine project root.'
@@ -289,3 +292,25 @@ def parse_bool(ans, default='y'):
             return True
         elif ans.startswith('n'):
             return False
+
+
+def guess_entity_type(transform_module, fields):
+    if not hasattr(transform_module.dotransform, 'inputs') or not transform_module.dotransform.inputs:
+        return Unknown
+    if len(transform_module.dotransform.inputs) == 1 or not fields:
+        return transform_module.dotransform.inputs[0][1]
+    num_matches = 0
+    best_match = Unknown
+    for category, entity_type in transform_module.dotransform.inputs:
+        l = len(set(entity_type._fields_to_properties_.keys()).intersection(fields.keys()))
+        if l > num_matches:
+            num_matches = l
+            best_match = entity_type
+    return best_match
+
+
+def to_entity(entity_type, value, fields):
+    e = entity_type(value)
+    for k, v in fields.iteritems():
+        e += Field(k, v)
+    return e

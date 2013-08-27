@@ -23,7 +23,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.4'
+__version__ = '0.5'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -60,7 +60,7 @@ parser.add_argument(
 
 
 # Help for this command
-def help():
+def help_():
     parser.print_help()
 
 
@@ -126,7 +126,7 @@ def install_transform(module, name, author, spec, prefix, working_dir):
             print ('Installing transform %s from %s...' % (n, module))
             transforms[n] = module
 
-        intype = spec.inputs[i][1]('').type
+        intype = spec.inputs[i][1].type
 
         sets = None
         if spec.inputs[i][0] is not None:

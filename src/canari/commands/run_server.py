@@ -15,7 +15,7 @@ from re import sub, findall
 from hashlib import md5
 
 from canari.maltego.message import (MaltegoTransformResponseMessage, MaltegoException, MaltegoTransformRequestMessage,
-                               MaltegoTransformExceptionMessage, MaltegoMessage, Message)
+                                    MaltegoTransformExceptionMessage, MaltegoMessage, Message)
 from common import cmd_name, import_transform, fix_binpath, fix_pypath, import_package, get_transform_version
 from canari.config import config
 
@@ -25,11 +25,10 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.6'
+__version__ = '0.7'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
-
 
 parser = ArgumentParser(
     description='Runs a transform server for the given packages.',
@@ -94,7 +93,7 @@ parser.add_argument(
 )
 
 
-def help():
+def help_():
     parser.print_help()
 
 
@@ -102,21 +101,21 @@ def description():
     return parser.description
 
 
-def message(m, r):
+def message(m, response):
     """Write a MaltegoMessage to stdout and exit successfully"""
 
-    r.send_response(200)
-    r.send_header('Content-Type', 'text/xml')
-    r.send_header('Connection', 'close')
-    r.end_headers()
+    response.send_response(200)
+    response.send_header('Content-Type', 'text/xml')
+    response.send_header('Connection', 'close')
+    response.end_headers()
 
     v = None
     if isinstance(m, basestring):
         for url in findall("<iconurl>\s*(file://[^\s<]+)\s*</iconurl>(?im)", m):
             path = '/%s' % md5(url).hexdigest()
-            new_url = '%s://%s%s' % ('https' if r.server.is_ssl else 'http', r.server.hostname, path)
-            if path not in r.server.resources:
-                r.server.resources[path] = url[7:]
+            new_url = '%s://%s%s' % ('https' if response.server.is_ssl else 'http', response.server.hostname, path)
+            if path not in response.server.resources:
+                response.server.resources[path] = url[7:]
             m.replace(url, new_url, 1)
         v = m
     else:
@@ -126,15 +125,15 @@ def message(m, r):
                 e.iconurl = e.iconurl.strip()
                 if e.iconurl.startswith('file://'):
                     path = '/%s' % md5(e.iconurl).hexdigest()
-                    new_url = '%s://%s%s' % ('https' if r.server.is_ssl else 'http', r.server.hostname, path)
-                    if path not in r.server.resources:
-                        r.server.resources[path] = e.iconurl[7:]
+                    new_url = '%s://%s%s' % ('https' if response.server.is_ssl else 'http', response.server.hostname, path)
+                    if path not in response.server.resources:
+                        response.server.resources[path] = e.iconurl[7:]
                     e.iconurl = new_url
 
         Message(MaltegoMessage(m)).write(sio)
         v = sio.getvalue()
-    # Get rid of those nasty unicode 32 characters
-    r.wfile.write(sub(r'(&#\d{5};){2}', r'', v))
+        # Get rid of those nasty unicode 32 characters
+    response.wfile.write(sub(r'(&#\d{5};){2}', r'', v))
 
 
 def croak(error_msg, r):
@@ -154,13 +153,12 @@ def croak(error_msg, r):
 
 
 class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
-
     protocol_version = 'HTTP/1.1'
     server_version = 'Canari/1.0'
     count = 0
 
 
-    def dotransform(self, t):
+    def dotransform(self, transform, valid_input_entity_types):
         try:
             if 'Content-Length' not in self.headers:
                 self.send_error(500, 'What?')
@@ -171,9 +169,9 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
             xml = fromstring(request_str).find('MaltegoTransformRequestMessage')
 
             e = xml.find('Entities/Entity')
-            etype = e.get('Type', '')
+            entity_type = e.get('Type', '')
 
-            if t[1] and etype not in t[1]:
+            if valid_input_entity_types and entity_type not in valid_input_entity_types:
                 self.send_error(400, 'Unsupported input entity!')
                 return
 
@@ -187,12 +185,14 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
                     config['default/%s' % k] = i
             limits = xml.find('Limits').attrib
 
-            msg = t[0](
+            msg = transform(
                 MaltegoTransformRequestMessage(value, fields, params, limits),
-                request_str if hasattr(t[0], 'cmd') and callable(t[0].cmd) else MaltegoTransformResponseMessage()
-            ) if get_transform_version(t[0]) == 2 else t[0](
+                request_str if hasattr(transform, 'cmd') and
+                callable(transform.cmd) else MaltegoTransformResponseMessage()
+            ) if get_transform_version(transform) == 2 else transform(
                 MaltegoTransformRequestMessage(value, fields, params, limits),
-                request_str if hasattr(t[0], 'cmd') and callable(t[0].cmd) else MaltegoTransformResponseMessage(),
+                request_str if hasattr(transform, 'cmd') and
+                callable(transform.cmd) else MaltegoTransformResponseMessage(),
                 config
             )
 
@@ -209,11 +209,10 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlsplit(self.path or '/').path
-
         if path not in self.server.transforms:
             self.send_error(404, "Duh?")
         else:
-            self.dotransform(self.server.transforms[path])
+            self.dotransform(*self.server.transforms[path])
 
     def do_GET(self):
         path = urlsplit(self.path or '/').path
@@ -232,7 +231,6 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
 
 
 class MaltegoHTTPServer(HTTPServer):
-
     server_name = 'Canari'
     resources = {}
     is_ssl = False
@@ -245,7 +243,6 @@ class MaltegoHTTPServer(HTTPServer):
 
 
 class SecureMaltegoHTTPServer(MaltegoHTTPServer):
-
     is_ssl = True
 
     def __init__(self, server_address=('', 8080), RequestHandlerClass=MaltegoTransformRequestHandler,
@@ -277,7 +274,6 @@ def parse_args(args):
 
 
 def run(args):
-
     opts = parse_args(args)
 
     fix_pypath()
@@ -291,40 +287,40 @@ def run(args):
 
     fix_binpath(config['default/path'])
 
-
     transforms = {}
 
     print ('Loading transform packages...')
 
     try:
-        for p in opts.packages:
+        for pkg_name in opts.packages:
 
-            if not p.endswith('.transforms'):
-                p = ('%s.transforms' % p)
+            if not pkg_name.endswith('.transforms'):
+                pkg_name = ('%s.transforms' % pkg_name)
 
-            print ('Loading transform package %s' % p)
+            print ('Loading transform package %s' % pkg_name)
 
-            m = import_package(p)
+            transform_package = import_package(pkg_name)
 
-            for t in m.__all__:
+            for transform_name in transform_package.__all__:
 
-                t = ('%s.%s' % (p, t))
-                m2 = import_transform(t)
+                transform_name = ('%s.%s' % (pkg_name, transform_name))
+                transform_module = import_transform(transform_name)
 
-                if not hasattr(m2, 'dotransform'):
+                if not hasattr(transform_module, 'dotransform'):
                     continue
 
-                if os.name == 'posix' and hasattr(m2.dotransform, 'privileged') and (os.geteuid() or not opts.enable_privileged):
+                if os.name == 'posix' and hasattr(transform_module.dotransform, 'privileged') and \
+                        (os.geteuid() or not opts.enable_privileged):
                     continue
 
-                if hasattr(m2.dotransform, 'remote') and m2.dotransform.remote:
-                    print ('Loading %s at /%s...' % (t, t))
-                    if hasattr(m2.dotransform, 'inputs'):
-                        inputs = [e[1]('').type for e in m2.dotransform.inputs]
-                        inputs = inputs + [i.split('.')[-1] for i in inputs]
-                        transforms['/%s' % t] = (m2.dotransform, inputs)
-                    else:
-                        transforms['/%s' % t] = (m2.dotransform, [])
+                if hasattr(transform_module.dotransform, 'remote') and transform_module.dotransform.remote:
+                    print ('Loading %s at /%s...' % (transform_name, transform_name))
+                    inputs = []
+                    if hasattr(transform_module.dotransform, 'inputs'):
+                        for category, entity_type in transform_module.dotransform.inputs:
+                            inputs.append(entity_type.type)
+                            inputs.append(entity_type._v2type_)
+                    transforms['/%s' % transform_name] = (transform_module.dotransform, inputs)
 
     except Exception, e:
         print (str(e))
@@ -346,7 +342,7 @@ def run(args):
             exit(-1)
         print ('Making it secure (1337)...')
         httpd = AsyncSecureMaltegoHTTPServer(server_address=server_address,
-            transforms=transforms, cert=opts.cert, hostname=opts.hostname)
+                                             transforms=transforms, cert=opts.cert, hostname=opts.hostname)
     else:
         print ('Really? Over regular HTTP? What a shame...')
         httpd = AsyncMaltegoHTTPServer(server_address=server_address, transforms=transforms, hostname=opts.hostname)
