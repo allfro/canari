@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from common import detect_settings_dir, cmd_name, project_tree, parse_bool
+from common import detect_settings_dir, cmd_name, project_tree, parse_bool, maltego_version
 from canari.maltego.entities import Entity
 
 from xml.etree.cElementTree import XML
@@ -16,12 +16,10 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = ['Nadeem Douba']
 
 __license__ = 'GPL'
-__version__ = '0.3'
+__version__ = '0.4'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
-
-
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
@@ -33,12 +31,10 @@ __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
-
 parser = ArgumentParser(
     description='Converts Maltego entity definition files to Canari python classes. Excludes Maltego built-in entities.',
     usage='canari %s [output file] [options]' % cmd_name(__name__)
 )
-
 
 parser.add_argument(
     'outfile',
@@ -103,7 +99,7 @@ parser.add_argument(
 )
 
 
-def help():
+def help_():
     parser.print_help()
 
 
@@ -122,32 +118,31 @@ def parse_args(args):
 
 
 def normalize_fn(fn):
-        # Get rid of starting underscores or numbers and bad chars for var names in python
-        return sub(r'[^A-Za-z0-9]', '', sub(r'^[^A-Za-z]+', '', fn))
+    # Get rid of starting underscores or numbers and bad chars for var names in python
+    return sub(r'[^A-Za-z0-9]', '', sub(r'^[^A-Za-z]+', '', fn))
 
 
-def diff(fn):
-    m = load_source('entities', fn)
+def get_existing_entities(filename):
+    m = load_source('entities', filename)
     l = []
     for c in dir(m):
         try:
-            i = m.__dict__[c]('load')
-            if isinstance(i, Entity):
-                l.append(i)
+            entity_class = m.__dict__[c]
+            if issubclass(entity_class, Entity):
+                l.append(entity_class)
         except TypeError:
             pass
     return l
 
 
 class DirFile(object):
-
     def __init__(self, path):
         self.path = path
 
     def namelist(self):
         l = []
         for base, dirs, files in walk(self.path):
-            l.extend([ path.join(base, f) for f in files ])
+            l.extend([path.join(base, f) for f in files])
         return l
 
     def open(self, fname):
@@ -155,74 +150,94 @@ class DirFile(object):
 
 
 def run(args):
-
     opts = parse_args(args)
 
     if path.exists(opts.outfile) and not opts.append and not \
-       parse_bool('%s already exists. Are you sure you want to overwrite it? [y/N]: ' % repr(opts.outfile), default='n'):
+        parse_bool('%s already exists. Are you sure you want to overwrite it? [y/N]: ' % repr(opts.outfile),
+                   default='n'):
         exit(-1)
 
+    entity_source = None
+    if opts.mtz_file is None:
+        d = detect_settings_dir()
+        if maltego_version(d) >= '3.4.0':
+            print("""
+=========================== ERROR: NOT SUPPORTED ===========================
 
-    ar = DirFile(
-        path.join(detect_settings_dir(), 'config', 'Maltego', 'Entities')
-    ) if opts.mtz_file is None else ZipFile(opts.mtz_file)
+ Starting from Maltego v3.4.0 the 'canari generate-entities' command can no
+ longer generate entity definition files from the Maltego configuration
+ directory. Entities can only be generated from export files (*.mtz). To
+ export entities navigate to the 'Manage' tab in Maltego, then click on the
+ 'Export Entities' button and follow the prompts. Once the entities have
+ been exported, run the following command:
 
-    entities = filter(lambda x: x.endswith('.entity'), ar.namelist())
+ shell> canari generate-entities -m myentities.mtz
 
-    nses = dict()
+=========================== ERROR: NOT SUPPORTED ===========================
+                """)
+            exit(-1)
+        entity_source = DirFile(
+            path.join(d, 'config', 'Maltego', 'Entities')
+        )
+    else:
+        entity_source = ZipFile(opts.mtz_file)
 
-    el = []
+    entity_files = filter(lambda x: x.endswith('.entity'), entity_source.namelist())
+
+    namespaces = dict()
+
+    excluded_entities = []
     if opts.append:
-        l = diff(opts.outfile)
-        el.extend([i.type for i in l])
-        for i in l:
-            if i.type.endswith('Entity'):
-                nses[i.namespace] = i.__class__.__name__
+        existing_entities = get_existing_entities(opts.outfile)
+        # excluded_entities.extend([e._type_ for e in existing_entities])
+        for entity_class in existing_entities:
+            excluded_entities.extend(entity_class._type_)
+            if entity_class._type_.endswith('Entity'):
+                namespaces[entity_class._namespace_] = entity_class.__name__
 
     print 'Generating %s...' % repr(opts.outfile)
-    fd = open(opts.outfile, 'ab' if opts.append else 'wb')
+    outfile = open(opts.outfile, 'ab' if opts.append else 'wb')
 
     if opts.append:
-        fd.write('\n\n')
+        outfile.write('\n\n')
     else:
-        fd.write('#!/usr/bin/env python\n\nfrom canari.maltego.entities import EntityField, Entity\n\n\n')
+        outfile.write('#!/usr/bin/env python\n\nfrom canari.maltego.entities import EntityField, Entity\n\n\n')
 
-    for e in entities:
-        xml = XML(ar.open(e).read())
+    for entity_file in entity_files:
+        xml = XML(entity_source.open(entity_file).read())
         id_ = xml.get('id')
 
-        if (opts.entity and id_ not in opts.entity) or id_ in el:
+        if (opts.entity and id_ not in opts.entity) or id_ in excluded_entities:
             continue
 
-        ens = id_.split('.')
+        namespace_entity = id_.split('.')
 
         base_classname = None
-        namespace = '.'.join(ens[:-1])
-        name = ens[-1]
+        namespace = '.'.join(namespace_entity[:-1])
+        name = namespace_entity[-1]
         classname = name
 
         if (opts.namespace and namespace not in opts.namespace) or namespace in opts.exclude_namespace:
             continue
 
-        if namespace not in nses:
-            base_classname = '%sEntity' % (''.join([ n.title() for n in ens[:-1] ]))
-            nses[namespace] = base_classname
+        if namespace not in namespaces:
+            base_classname = '%sEntity' % (''.join([n.title() for n in namespace_entity[:-1]]))
+            namespaces[namespace] = base_classname
 
-            fd.write('class %s(Entity):\n    namespace = %s\n\n' % (base_classname, repr(namespace)))
+            outfile.write('class %s(Entity):\n    _namespace_ = %s\n\n' % (base_classname, repr(namespace)))
         else:
-            base_classname = nses[namespace]
+            base_classname = namespaces[namespace]
 
-
-        for f in xml.findall('Properties/Fields/Field'):
+        for field in xml.findall('Properties/Fields/Field'):
             fields = [
-                'name=%s' % repr(f.get('name')),
-                'propname=%s' % repr(normalize_fn(f.get('name'))),
-                'displayname=%s' % repr(f.get('displayName'))
+                'name=%s' % repr(field.get('name')),
+                'propname=%s' % repr(normalize_fn(field.get('name'))),
+                'displayname=%s' % repr(field.get('displayName'))
 
             ]
-            fd.write('@EntityField(%s)\n' % ', '.join(fields))
+            outfile.write('@EntityField(%s)\n' % ', '.join(fields))
 
-        fd.write('class %s(%s):\n    pass\n\n\n' % (classname, base_classname))
+        outfile.write('class %s(%s):\n    pass\n\n\n' % (classname, base_classname))
 
-    fd.close()
+    outfile.close()
     print 'done.'
