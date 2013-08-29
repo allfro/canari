@@ -4,7 +4,6 @@ from common import cmd_name
 
 from csv import reader, DictWriter
 from argparse import ArgumentParser
-# from re import sub, match
 
 
 __author__ = 'Nadeem Douba'

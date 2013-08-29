@@ -118,7 +118,7 @@ def install_transform(module, name, author, spec, prefix, working_dir):
 
     setsdir = os.path.join(prefix, 'config', 'Maltego', 'TransformSets')
 
-    for i,n in enumerate(spec.uuids):
+    for i, n in enumerate(spec.uuids):
 
         if n in transforms:
             sys.stderr.write('WARNING: Previous declaration of %s in transform %s. Overwriting...' % (n, module))
@@ -126,7 +126,7 @@ def install_transform(module, name, author, spec, prefix, working_dir):
             print ('Installing transform %s from %s...' % (n, module))
             transforms[n] = module
 
-        intype = spec.inputs[i][1].type
+        intype = spec.inputs[i][1]._type_
 
         sets = None
         if spec.inputs[i][0] is not None:

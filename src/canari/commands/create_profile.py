@@ -112,7 +112,7 @@ def write_transform(module, name, author, spec, profile, working_dir):
             print ('Writing transform %s to %s...' % (n, profile.filename))
             transforms[n] = module
 
-        intype = spec.inputs[i][1].type
+        intype = spec.inputs[i][1]._type_
 
         sets = None
         if spec.inputs[i][0] is not None:

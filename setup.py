@@ -45,7 +45,8 @@ setup(
     },
     install_requires=[
         'argparse',
-        'flask'
+        'flask',
+        'Twisted'
     ],
     dependency_links=[]
 )
