@@ -6,7 +6,7 @@ import sys
 from argparse import ArgumentParser
 from traceback import format_exc
 
-from common import croak, import_transform, cmd_name, console_message, fix_binpath, sudo, get_transform_version
+from common import croak, import_transform, cmd_name, console_message, fix_binpath, sudo, get_transform_version, to_entity, guess_entity_type
 from canari.maltego.message import (MaltegoException, MaltegoTransformResponseMessage, UIMessage,
                                     MaltegoTransformRequestMessage)
 from canari.maltego.utils import onterminate, parseargs
@@ -18,7 +18,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.5'
+__version__ = '0.6'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -86,11 +86,14 @@ def run(args):
         else:
             m.__setattr__('onterminate', lambda *args: exit(-1))
 
+        input_entity = to_entity(guess_entity_type(m, fields), value, fields)
+
+
         msg = m.dotransform(
-            MaltegoTransformRequestMessage(value, fields, params),
+            MaltegoTransformRequestMessage(value, fields, params, input_entity),
             MaltegoTransformResponseMessage()
         ) if get_transform_version(m.dotransform) == 2 else m.dotransform(
-            MaltegoTransformRequestMessage(value, fields, params),
+            MaltegoTransformRequestMessage(value, fields, params, input_entity),
             MaltegoTransformResponseMessage(),
             config
         )
