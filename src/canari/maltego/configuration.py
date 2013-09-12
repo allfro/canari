@@ -346,7 +346,7 @@ class Transform(MaltegoElement):
 @XMLAttribute(name='enabled', type=XSAttributeType.Bool, default=True)
 @XMLAttribute(name='description', default='Local transforms hosted on this machine')
 @XMLAttribute(name='url', default='http://localhost')
-@XMLSubElement(name='LastSync', propname='lastsync', default=time.strftime('%Y-%m-%d %X.000 %Z'))
+@XMLSubElement(name='LastSync', propname='lastsync', default=time.strftime('%Y-%m-%d'))
 @XMLSubElement(name='Transforms', propname='transforms', type=XSSubElementType.List)
 class MaltegoServer(MaltegoElement):
 
