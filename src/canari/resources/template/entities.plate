@@ -25,7 +25,7 @@ have an entity type name of ${namespace}.${entity}. When adding a new entity in 
 name (${namespace}.${entity}) in the 'Unique entity type' field.
 """
 class ${base_entity}(Entity):
-    namespace = '${namespace}'
+    _namespace_ = '${namespace}'
 
 
 """
