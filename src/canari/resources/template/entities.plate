@@ -39,6 +39,7 @@ You can specify as many entity fields as you want by just adding an extra @Entit
     - choices: a list of acceptable field values for this field (optional)
     - matchingrule: whether or not the field should be loosely or strictly matched (optional, default: MatchingRule.Strict)
     - decorator: a function that is invoked each and everytime the field's value is set or changed.
+    - is_value: a boolean value that determines whether the field is also the default value of the entity object.
 TODO: define as many custom fields and entity types as you wish:)
 """    
 @EntityField(name='${package}.fieldN', propname='fieldN', displayname='Field N', matchingrule=MatchingRule.Loose)
@@ -48,5 +49,5 @@ class ${entity}(${base_entity}):
     Uncomment the line below and comment out the pass if you wish to define a ridiculous entity type name like
     'my.fancy.EntityType'
     """
-    # name = my.fancy.EntityType
+    # _name_ = 'my.fancy.EntityType'
     pass

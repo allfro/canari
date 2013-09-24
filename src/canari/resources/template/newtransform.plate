@@ -15,7 +15,7 @@ __status__ = 'Development'
 
 __all__ = [
     'dotransform',
-    'onterminate'
+    'onterminate' # comment out this line if you don't need this function.
 ]
 
 
@@ -31,7 +31,7 @@ TODO: Uncomment the line below if the transform needs to run as super-user
     inputs=[ ( 'TODO: Some Set', SomethingEntity ) ],
     debug=True
 )
-def dotransform(request, response):
+def dotransform(request, response, config):
     """
     TODO: write your data mining logic below.
     """

@@ -33,6 +33,7 @@ The @configure decorator tells mtginstall how to install the transform in Malteg
     - inputs:       a list of tuples where the first item is the name of the transform set the transform should be part
                     of, and the second item is the input entity type.
     - debug:        Whether or not the debugging window should appear in Maltego's UI when running the transform.
+    - remote:       Whether or not the transform can be used as a remote transform in Plume.
 TODO: set the appropriate configuration parameters for your transform.
 """
 @configure(
@@ -40,14 +41,24 @@ TODO: set the appropriate configuration parameters for your transform.
     description='Returns a ${entity} entity with the phrase "Hello Word!"',
     uuids=[ '${namespace}.v2.${entity}ToPhrase_HelloWorld' ],
     inputs=[ ( '${project}', Person ) ],
+    remote=False,
     debug=True
 )
-def dotransform(request, response):
+def dotransform(request, response, config):
     """
     The dotransform function is our transform's entry point. The request object has the following properties:
         - value:    a string containing the value of the input entity.
         - fields:   a dictionary of entity field names and their respective values of the input entity.
         - params:   any additional command-line arguments to be passed to the transform.
+        - entity:   the information above is serialized into an Entity object. The entity type is determined
+                    by the inputs field in @configure for local transforms. For remote transforms, the entity
+                    type is determined by the information in the body of the request. Local transforms suffer
+                    from one limitation: if more than one entity type is listed in the inputs field of @configure,
+                    the entity type might not be resolvable. Therefore, this should not be referenced in local
+                    transforms if there is more than one input entity type defined in @configure.
+
+    The response object is a container for output entities, UI messages, and exception messages. The config object
+    contains a key-value store of the configuration file.
     TODO: write your data mining logic below.
     """
 

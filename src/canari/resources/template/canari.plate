@@ -6,3 +6,7 @@
 configs = $config
 
 path = $path
+
+[remote]
+
+packages =
