@@ -26,7 +26,6 @@ __all__ = [
 
 
 class CanariConfigParser(SafeConfigParser):
-
     def _interpolate_environment_variables(self, value):
         if isinstance(value, str):
             evs = self._get_env_vars(value)
@@ -60,7 +59,7 @@ class CanariConfigParser(SafeConfigParser):
         return self
 
     def __getitem__(self, item):
-        section,option = item.split('/')
+        section, option = item.split('/')
         value = self.get(section, option)
         if isinstance(value, basestring):
             if value.startswith('module:'):
@@ -93,7 +92,7 @@ class CanariConfigParser(SafeConfigParser):
         return value
 
     def __setitem__(self, key, value):
-        section,option = key.split('/')
+        section, option = key.split('/')
         if not self.has_section(section):
             self.add_section(section)
         self.set(section, option, value)
@@ -101,8 +100,8 @@ class CanariConfigParser(SafeConfigParser):
 
 config = CanariConfigParser()
 
-dconf = path.join( conf )
-lconf = path.join( getcwd(), 'canari.conf' )
+dconf = path.join(conf)
+lconf = path.join(getcwd(), 'canari.conf')
 
-config.read([ dconf , lconf ])
+config.read([dconf, lconf])
 config.read(config['default/configs'])
