@@ -23,7 +23,7 @@ case $$1 in
                 --pidfile=$$PID_FILE \
                 --rundir=$$WORKING_DIR \
                 --uid=$$(id -u $$PLUME_USER) \
-                --gid=$$(grep nobody /etc/group | cut -f 3 -d ':') \
+                --gid=$$(grep $$PLUME_GROUP /etc/group | cut -f 3 -d ':') \
                 web \
                 --wsgi=plume.application \
                 --logfile=plume.log \
