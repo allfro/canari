@@ -29,5 +29,8 @@ __all__ = [
     'generate_entities',
     'version',
     'banner',
-    'create_profile'
+    'create_profile',
+    'install_plume',
+    'load_plume_package',
+    'unload_plume_package'
 ]
