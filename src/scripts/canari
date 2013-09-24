@@ -18,6 +18,7 @@ __status__ = 'Development'
 
 cmds = get_commands()
 
+
 def parse_args():
     parser = ArgumentParser(
         description='Centralized Canari Management System',
