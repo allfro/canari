@@ -57,17 +57,17 @@ class Canari(Flask):
 
         packages = None
 
-        # Read modules that are to be loaded at runtime
+        # Read packages that are to be loaded at runtime
         try:
-            packages = _config.config['remote/modules']
+            packages = _config.config['remote/packages']
         except NoSectionError:
-            sys.stderr.write('Exiting... You did not specify a [remote] section and a "modules" '
-                             'option in your canari.conf file!')
+            sys.stderr.write('Exiting... You did not specify a [remote] section and a "packages" '
+                             'option in your canari.conf file!\n')
             exit(-1)
 
         # Is packages not blank
         if not packages:
-            sys.stderr.write('Exiting... You did not specify any transform modules to load in your canari.conf file!')
+            sys.stderr.write('Exiting... You did not specify any transform packages to load in your canari.conf file!\n')
             exit(-1)
         elif isinstance(packages, basestring):
             packages = [packages]
@@ -116,7 +116,7 @@ class Canari(Flask):
                     inputs = {}
                     if hasattr(transform_module.dotransform, 'inputs'):
                         for category, entity_type in transform_module.dotransform.inputs:
-                            inputs[entity_type.type] = entity_type
+                            inputs[entity_type._type_] = entity_type
                             inputs[entity_type._v2type_] = entity_type
                     self.transforms[transform_name] = (transform_module.dotransform, inputs)
 
