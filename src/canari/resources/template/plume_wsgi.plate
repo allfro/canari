@@ -16,7 +16,7 @@ __status__ = 'Development'
 
 
 # Import modules relative to where this script is if necessary
-my_location = os.path.dirname(__file__)
+my_location = os.path.dirname(os.path.abspath(__file__))
 os.chdir(my_location)
 sys.path.append(my_location)
 
@@ -24,4 +24,4 @@ sys.path.append(my_location)
 os.environ['PYTHON_EGG_CACHE'] = tempfile.gettempdir()
 
 # Import our Flask app
-from plume import app as application
+from canari.tds.plume import app as application
