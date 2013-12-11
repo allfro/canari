@@ -27,7 +27,7 @@ parser.add_argument(
     'graph',
     metavar='<graph>',
     help='The name of the graph file you wish to convert to CSV.',
-)
+    )
 
 
 def parse_args(args):
@@ -76,6 +76,6 @@ def run(args):
                                          '{http://maltego.paterva.com/xml/mtgx}Property'):
                     value = prop.find('{http://maltego.paterva.com/xml/mtgx}Value').text or ''
                     row.append(to_utf8(('%s=%s' % (prop.get('displayName'), value)).strip()))
-                row.append('Incoming Links=%s' % links[node_id]['in_'])
-                row.append('Outgoing Links=%s' % links[node_id]['out'])
+                row.append('Incoming Links=%s' % links.get(node_id, {}).get('in_', 0))
+                row.append('Outgoing Links=%s' % links.get(node_id, {}).get('out', 0))
                 csv.writerow(row)
