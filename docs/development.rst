@@ -42,6 +42,17 @@ You can test the :py:mod:`helloworld` transform module right away by running `ca
             `- Field: test {'DisplayName': 'Field N', 'Name': 'test.fieldN', 'MatchingRule': 'strict'}
 
 
+.. warning::
+
+    You will need to execute `sudo easy_install sploitego` as a workaround if the following Traceback is triggered::
+
+    $ canari debug-transform mypackage.transforms.helloworld Phil
+    Traceback (most recent call last):
+     File "/Library/Python/2.6/site-packages/canari-1.0-py2.6.egg/canari/commands/debug_transform.py", line 92, in run
+        ) if get_transform_version(m.dotransform) == 2 else m.dotransform(
+    TypeError: __init__() takes at least 5 arguments (4 given)
+
+
 Developing a Transform
 ======================
 
