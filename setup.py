@@ -20,11 +20,9 @@ if os.name == 'posix':
         ]
     )
 
-
 extras = [
     'readline'
 ]
-
 
 if os.name == 'nt':
     scripts += ['%s.bat' % s for s in scripts]
@@ -37,16 +35,17 @@ setup(
     description='Rapid transform development and transform execution framework for Maltego.',
     license='GPL',
     packages=find_packages('src'),
-    package_dir={ '' : 'src' },
+    package_dir={'': 'src'},
     scripts=scripts,
     zip_safe=False,
     package_data={
-        '' : [ '*.conf', '*.plate' ]
+        '': ['*.conf', '*.plate']
     },
     install_requires=[
         'argparse',
         'flask',
-        'Twisted'
+        'Twisted',
+        'safedexml'
     ],
     dependency_links=[]
 )
