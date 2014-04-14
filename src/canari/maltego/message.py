@@ -455,9 +455,9 @@ class Entity(object):
     def __init__(self, value, **kwargs):
         if isinstance(value, _Entity):
             self._entity = value
-            for name, field in self._entity.fields.iteritems():
-                if name not in self._fields_to_properties_:
-                    self._bind_field(field)
+            # for name, field in self._entity.fields.iteritems():
+            #     if name not in self._fields_to_properties_:
+            #         self._bind_field(field)
         else:
             self._entity = _Entity(
                 type=kwargs.pop('type', self._type_),
@@ -472,22 +472,24 @@ class Entity(object):
             if hasattr(self, p):
                 setattr(self, p, kwargs[p])
 
-    def _bind_field(self, field):
-        EntityField(
-            **dict(
-                (f.field_name, getattr(field, f.field_name)) for f in field._fields
-            )
-        ).__call__(self.__class__)
-        return re.sub('[^\w]+', '_', field.name)
+    # def _bind_field(self, field):
+    #     EntityField(
+    #         **dict(
+    #             (f.field_name, getattr(field, f.field_name)) for f in field._fields
+    #         )
+    #     ).__call__(self.__class__)
+    #     return re.sub('[^\w]+', '_', field.name)
 
 
     def appendelement(self, other):
         if isinstance(other, Field):
             if other.name not in self._fields_to_properties_:
-                propname = self._bind_field(other)
+                # propname = self._bind_field(other)
+                self.fields[other.name] = other
             else:
                 propname = self._fields_to_properties_[other.name]
-            setattr(self, propname, other.value)
+                setattr(self, propname, other.value)
+            # setattr(self, propname, other.value)
         elif isinstance(other, Label):
             self.labels[other.name] = other
 
