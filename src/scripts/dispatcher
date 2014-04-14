@@ -1,8 +1,8 @@
 #!/usr/bin/env python
+from canari.commands.common import fix_pypath, fix_binpath
 
-from canari.commands.run_transform import run
-
-from sys import argv
+from canari.commands.run_transform import run_transform
+from canari.config import config
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
@@ -16,4 +16,8 @@ __status__ = 'Development'
 
 
 if __name__ == '__main__':
-    run(argv[1:])
+    fix_pypath()
+    fix_binpath(config['default/path'])
+    run_transform.parser.prog = 'dispatcher'
+    opts = run_transform.parser.parse_args()
+    run_transform(opts)
