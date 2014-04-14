@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-from utils.stack import calling_package
-
 from imghdr import what
+from utils.stack import calling_package
 from pkg_resources import resource_filename, resource_listdir, resource_isdir, resource_exists
 
 __author__ = 'Nadeem Douba'
@@ -10,7 +9,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.3'
+__version__ = '0.4'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
