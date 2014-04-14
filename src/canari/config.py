@@ -6,7 +6,7 @@ from re import findall, search, match, split
 from ConfigParser import SafeConfigParser
 from os import environ, getcwd, path
 from utils.wordlist import wordlist
-from urlparse import urlsplit
+from urlparse import urlparse
 
 
 __author__ = 'Nadeem Douba'
@@ -14,7 +14,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -63,7 +63,7 @@ class CanariConfigParser(SafeConfigParser):
         value = self.get(section, option)
         if isinstance(value, basestring):
             if value.startswith('module:'):
-                r = urlsplit(value.replace('module', 'http'))
+                r = urlparse(value)
                 try:
                     v = r.path.lstrip('/')
                     m = __import__(r.netloc, globals(), locals(), [v])
