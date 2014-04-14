@@ -1,9 +1,6 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 
-from canari.xmltools.oxml import ElementTree, Element
-
-from cStringIO import StringIO
-from copy import deepcopy
+from xml.etree.ElementTree import Element, tostring
 
 
 __author__ = 'Nadeem Douba'
@@ -11,11 +8,10 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
-
 
 __all__ = [
     'HTML',
@@ -28,49 +24,38 @@ __all__ = [
 ]
 
 
-class HTML(Element, object):
-
+class HTML(Element):
     def __init__(self, tag='html', attrib={}, **extra):
         attrib = attrib.copy()
         attrib.update(extra)
         super(HTML, self).__init__(tag, attrib)
 
     def __add__(self, other):
-        newobj = deepcopy(self)
-        newobj.append(other)
-        return newobj
-
-    def __iadd__(self, other):
         self.append(other)
         return self
+
+    __iadd__ = __add__
 
     def __sub__(self, other):
         self.remove(other)
-        newobj = deepcopy(self)
-        self.append(other)
-        return newobj
-
-    def __isub__(self, other):
-        self.remove(other)
         return self
 
+    __isub__ = __sub__
+
     def __str__(self):
-        sio = StringIO()
-        ElementTree(self).write(sio)
-        return sio.getvalue()
+        return tostring(self)
 
 
 class TABLE(HTML):
-
     def __init__(self, title="GENERAL INFORMATION", colspan="2", **kwargs):
         super(TABLE, self).__init__(
             "table",
             attrib={
-                'width' : '100%',
-                'border' : '1',
-                'rules' : 'cols',
-                'frame' : 'box',
-                'cellpadding' : '2'
+                'width': '100%',
+                'border': '1',
+                'rules': 'cols',
+                'frame': 'box',
+                'cellpadding': '2'
             }
         )
 
@@ -81,16 +66,15 @@ class TABLE(HTML):
         for i in kwargs:
             self.set(i, str(kwargs[i]) if not isinstance(kwargs[i], basestring) else kwargs[i])
 
-class TR(HTML):
 
+class TR(HTML):
     def __init__(self):
         super(TR, self).__init__('tr')
 
 
 class A(HTML):
-
     def __init__(self, label, href, **kwargs):
-        attrib = { 'href' : href }
+        attrib = {'href': href}
         attrib.update(kwargs)
         super(A, self).__init__(
             'a',
@@ -100,9 +84,8 @@ class A(HTML):
 
 
 class IMG(HTML):
-
     def __init__(self, src, **kwargs):
-        attrib = { 'src' : src }
+        attrib = {'src': src}
         attrib.update(kwargs)
 
         super(IMG, self).__init__(
@@ -110,8 +93,8 @@ class IMG(HTML):
             attrib=attrib
         )
 
-class TD(HTML):
 
+class TD(HTML):
     ONE = "one"
     TWO = "two"
     THREE = "three"
@@ -121,9 +104,9 @@ class TD(HTML):
         super(TD, self).__init__(
             'td',
             attrib={
-                'class' : css_class,
-                'align' : align,
-                }
+                'class': css_class,
+                'align': align,
+            }
         )
         self.text = str(value) if not isinstance(value, basestring) else value
 
@@ -132,14 +115,13 @@ class TD(HTML):
 
 
 class Table(object):
-
     def __init__(self, columns, title='GENERAL INFORMATION'):
         self._rows = []
         self._title = title
-        self._rows.append([ TD(c, TD.THREE) for c in columns ])
+        self._rows.append([TD(c, TD.THREE) for c in columns])
 
     def addrow(self, columns):
-        self._rows.append([ TD(c) for c in columns ])
+        self._rows.append([TD(c) for c in columns])
 
     def __str__(self):
         self.table = TABLE(self._title, colspan=len(self._rows[0]))
