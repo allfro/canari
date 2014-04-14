@@ -382,7 +382,7 @@ class Field(MaltegoElement):
     nullable = fields_.Boolean(default=True)
     hidden = fields_.Boolean(default=False)
     readonly = fields_.Boolean(default=False)
-    description = fields_.String()
+    description = fields_.String(required=False)
     displayname = fields_.String(attrname='displayName')
     defaultvalue = fields_.String(tagname='DefaultValue', required=False)
     samplevalue = fields_.String(tagname='SampleValue', default='')
@@ -392,11 +392,6 @@ class Groups(MaltegoElement):
     pass
 
 
-class Fields(MaltegoElement):
-
-    fields = fields_.Dict(Field, key='name', tagname='Fields')
-
-
 class EntityProperties(MaltegoElement):
 
     class meta:
@@ -404,32 +399,33 @@ class EntityProperties(MaltegoElement):
 
     value = fields_.String(required=False)
     groups = fields_.Model(Groups, required=False)
+    fields = fields_.Dict(Field, key='name', tagname='Fields', required=False)
 
 
 class RegexGroup(MaltegoElement):
 
-    property = fields_.String()
+    property = fields_.String(required=False)
 
 
 class Converter(MaltegoElement):
 
-    value = fields_.CDATA(default='', tagname='Value')
+    value = fields_.CDATA(default='', tagname='Value', required=False)
     regexgroups = fields_.Dict(RegexGroup, key='property', required=False)
 
 
 class MaltegoEntity(MaltegoElement):
 
     id = fields_.String()
-    displayname = fields_.String(attrname='displayName')
-    plural = fields_.String(attrname='displayNamePlural')
-    description = fields_.String(default='')
-    category = fields_.String()
+    displayname = fields_.String(attrname='displayName', required=False)
+    plural = fields_.String(attrname='displayNamePlural', required=False)
+    description = fields_.String(default='', required=False)
+    category = fields_.String(required=False)
     smallicon = fields_.String(attrname='smallIconResource', required=False)
     largeicon = fields_.String(attrname='largeIconResource', required=False)
-    allowedRoot = fields_.Boolean(default=True)
-    conversion_order = fields_.Integer(attrname='conversionOrder', default=2147483647)
-    visible = fields_.Boolean(default=True)
+    allowedRoot = fields_.Boolean(default=True, required=False)
+    conversion_order = fields_.Integer(attrname='conversionOrder', default=2147483647, required=False)
+    visible = fields_.Boolean(default=True, required=False)
     largeicontag = fields_.String(tagname='Icon', required=False)
     smallicontag = fields_.String(tagname='SmallIcon', required=False)
     converter = fields_.Model(Converter, required=False)
-    properties = fields_.Model(EntityProperties)
+    properties = fields_.Model(EntityProperties, required=False)
