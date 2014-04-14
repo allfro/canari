@@ -11,8 +11,6 @@ import sys
 import os
 import re
 
-__version__ = '0.2'
-
 # Third-party imports
 from flask import Flask, Response, request
 
@@ -29,7 +27,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -132,14 +130,14 @@ def croak(error_msg):
         MaltegoMessage(
             MaltegoTransformExceptionMessage(exceptions=MaltegoException(error_msg))
         )
-    ).write(file=s)
+    ).write(file_or_filename=s)
     return s.getvalue()
 
 
 def message(m):
     """Write a MaltegoMessage to stdout and exit successfully"""
     v = None
-    if isinstance(m, basestring):
+    if isinstance(m, str):
         # Let's make sure that we're not spewing out local file system information ;)
         for url in re.findall("<iconurl>\s*(file://[^\s<]+)\s*</iconurl>(?im)", m):
             path = 'static/%s' % hashlib.md5(url[7:]).hexdigest()
