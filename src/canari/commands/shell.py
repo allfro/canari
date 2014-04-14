@@ -18,7 +18,7 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.4'
+__version__ = '0.5'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -90,7 +90,11 @@ def shell(opts):
     if not opts.package.endswith('transforms'):
         opts.package = '%s.transforms' % opts.package
 
-    t = TransformDistribution(opts.package)
-    with pushd(opts.working_dir or t.default_prefix):
-        mtg_console = MtgConsole(opts.package)
-        mtg_console.interact(highlight('Welcome to Canari %s.' % canari.__version__, 'green', True))
+    try:
+        t = TransformDistribution(opts.package)
+        with pushd(opts.working_dir or t.default_prefix):
+            mtg_console = MtgConsole(opts.package)
+            mtg_console.interact(highlight('Welcome to Canari %s.' % canari.__version__, 'green', True))
+    except ValueError, e:
+        print str(e)
+        exit(-1)
