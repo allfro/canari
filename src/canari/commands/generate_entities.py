@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-from zipfile import ZipFile
 import imp
 import re
 from canari.maltego.configuration import MaltegoEntity
