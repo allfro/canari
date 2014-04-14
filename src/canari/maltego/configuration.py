@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-import time
 
-from canari.xmltools.oxml import XMLAttribute, XSAttributeType, XMLSubElement, XSSubElementType
-from message import MaltegoElement
+import time
+from canari.xmltools.oxml import MaltegoElement, fields as fields_
 
 
 __author__ = 'Nadeem Douba'
@@ -10,15 +9,18 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
 __all__ = [
-    'BuiltInTransformSets',
     'TransformAdapter',
-    'MaltegoTransform',
+    'VisibilityType',
+    'BuiltInTransformSets',
+    'Set',
+    'Transform',
+    'TransformSet',
     'InputConstraint',
     'OutputEntity',
     'InputEntity',
@@ -34,81 +36,26 @@ __all__ = [
     'CmdDbgTransformProperty',
     'CmdDbgTransformPropertySetting',
     'TransformSettings',
-    'Set',
-    'MaltegoServer',
+    'Protocol',
+    'AuthenticationType',
     'Authentication',
-    'Protocol'
+    'MaltegoServer',
+    'EntityCategory',
+    'attr',
+    'fileobject',
+    'attributes',
+    'Properties',
+    'MaltegoTransform'
 ]
-
 
 class TransformAdapter(object):
     Local = 'com.paterva.maltego.transform.protocol.v2.LocalTransformAdapterV2'
     Remote = 'com.paterva.maltego.transform.protocol.v2.RemoteTransformAdapterV2'
 
 
-@XMLAttribute(name='abstract', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='author', default='')
-@XMLAttribute(name='description', default='')
-@XMLAttribute(name='displayName', propname='displayname')
-@XMLAttribute(name='name')
-@XMLAttribute(name='requireDisplayInfo', propname='requireinfo', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='template', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='visibility', default='public')
-@XMLAttribute(name='helpURL', propname='helpurl')
-@XMLAttribute(name='owner')
-@XMLAttribute(name='version', default='1.0')
-@XMLAttribute(name='locationRelevance', propname='locrel')
-@XMLSubElement(name='TransformAdapter', propname='adapter', type=XSSubElementType.Enum, choices=[TransformAdapter.Local, TransformAdapter.Remote], default=TransformAdapter.Local)
-@XMLSubElement(name='StealthLevel', propname='stealthlvl', type=XSSubElementType.Integer, default=0)
-@XMLSubElement(name='defaultSets', propname='sets', type=XSSubElementType.List)
-@XMLSubElement(name='Disclaimer', propname='disclaimer', type=XSSubElementType.CData)
-@XMLSubElement(name='Help', propname='help', type=XSSubElementType.CData)
-@XMLSubElement(name='OutputEntities', propname='output', type=XSSubElementType.List)
-@XMLSubElement(name='InputConstraints', propname='input', type=XSSubElementType.List)
-@XMLSubElement(name='Properties/Fields', propname='properties', type=XSSubElementType.List)
-class MaltegoTransform(MaltegoElement):
-    def __init__(self, name, displayname, **kwargs):
-        super(MaltegoTransform, self).__init__(self.__class__.__name__)
-        self.name = name
-        self.displayname = displayname
-        self.abstract = kwargs.get('abstract', self.abstract)
-        self.author = kwargs.get('author', self.author)
-        self.description = kwargs.get('description', self.description)
-        self.requireinfo = kwargs.get('requireinfo', self.requireinfo)
-        self.template = kwargs.get('template', self.template)
-        self.visibility = kwargs.get('visibility', self.visibility)
-        self.helpurl = kwargs.get('helpurl', self.helpurl)
-        self.owner = kwargs.get('owner', self.owner)
-        self.version = kwargs.get('version', self.version)
-        self.locrel = kwargs.get('locrel', self.locrel)
-        self.adapter = kwargs.get('adapter', self.adapter)
-        self.stealthlvl = kwargs.get('stealthlvl', self.stealthlvl)
-        self.disclaimer = kwargs.get('disclaimer')
-        self.help = kwargs.get('help')
-        self.appendelements(kwargs.get('sets'))
-        self.appendelements(kwargs.get('input'))
-        self.appendelements(kwargs.get('output'))
-        self.appendelements(kwargs.get('properties'))
-
-    def appendelement(self, other):
-        if isinstance(other, Set):
-            self.sets += other
-        elif isinstance(other, TransformProperty):
-            self.properties += other
-        elif isinstance(other, InputConstraint) or isinstance(other, InputEntity):
-            self.input += other
-        elif isinstance(other, OutputEntity):
-            self.output += other
-
-    def removeelement(self, other):
-        if isinstance(other, Set):
-            self.sets -= other
-        if isinstance(other, TransformProperty):
-            self.properties -= other
-        elif isinstance(other, InputConstraint) or isinstance(other, InputEntity):
-            self.input -= other
-        elif isinstance(other, OutputEntity):
-            self.output -= other
+class VisibilityType(object):
+    Public = 'public'
+    Private = 'private'
 
 
 class BuiltInTransformSets(object):
@@ -130,52 +77,49 @@ class BuiltInTransformSets(object):
     FilesAndDocumentsFromPhrase = "Files and Documents from Phrase"
 
 
-@XMLAttribute(name='name')
 class Set(MaltegoElement):
-
-    def __init__(self, name):
-        super(Set, self).__init__(self.__class__.__name__)
-        self.name = name
+    name = fields_.String()
 
 
-@XMLAttribute(name='name')
-@XMLAttribute(name='description', default='')
-@XMLSubElement(name='Transforms', propname='transforms', type=XSSubElementType.List)
+class Transform(MaltegoElement):
+    name = fields_.String()
+
+
 class TransformSet(MaltegoElement):
 
-    def __init__(self, name, **kwargs):
-        super(TransformSet, self).__init__(self.__class__.__name__)
-        self.name = name
-        self.description = kwargs.get('description', self.description)
-        self.appendelements(kwargs.get('transforms'))
+    name = fields_.String()
+    description = fields_.String(default='')
+    transforms = fields_.List(Transform, tagname='Transforms')
 
     def appendelement(self, other):
         if isinstance(other, Transform):
-            self.transforms += other
+            self.transforms.append(other)
 
     def removeelement(self, other):
         if isinstance(other, Transform):
-            self.transforms -= other
+            self.transforms.remove(other)
 
 
-@XMLAttribute(name='max', type=XSAttributeType.Integer, default=1)
-@XMLAttribute(name='min', type=XSAttributeType.Integer, default=1)
-@XMLAttribute(name='type')
 class InputConstraint(MaltegoElement):
 
-    def __init__(self, type_, **kwargs):
-        super(InputConstraint, self).__init__('Entity')
-        self.type = type_
-        self.min = kwargs.get('min', self.min)
-        self.max = kwargs.get('max', self.max)
+    class meta:
+        tagname = 'Entity'
+
+    type = fields_.String()
+    min = fields_.Integer(default=1)
+    max = fields_.Integer(default=1)
 
 
 class OutputEntity(InputConstraint):
-    pass
+
+    class meta:
+        tagname = 'Entity'
 
 
 class InputEntity(InputConstraint):
-    pass
+
+    class meta:
+        tagname = 'Entity'
 
 
 class PropertyType(object):
@@ -184,193 +128,308 @@ class PropertyType(object):
     Integer = 'int'
 
 
-@XMLSubElement(name='DefaultValue', propname='defaultvalue')
-@XMLSubElement(name='SampleValue', propname='samplevalue', default='')
-@XMLAttribute(name='abstract', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='description', default='')
-@XMLAttribute(name='displayName', propname='displayname')
-@XMLAttribute(name='hidden', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='name')
-@XMLAttribute(name='nullable', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='readonly', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='popup', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='type', default=PropertyType.String)
-@XMLAttribute(name='visibility', default='public')
 class TransformProperty(MaltegoElement):
 
-    def __init__(self, name, default, displayname, description, **kwargs):
-        super(TransformProperty, self).__init__("Property")
-        self.name = name
-        self.displayname = displayname
-        self.defaultvalue = default
-        self.description = description
-        self.abstract = kwargs.get('abstract', self.abstract)
-        self.samplevalue = kwargs.get('sample', self.samplevalue)
-        self.hidden = kwargs.get('hidden', self.hidden)
-        self.nullable = kwargs.get('nullable', self.nullable)
-        self.popup = kwargs.get('popup', self.popup)
-        self.readonly = kwargs.get('readonly', self.readonly)
-        self.type = kwargs.get('type', self.type)
-        self.visibility = kwargs.get('visibility', self.visibility)
+    class meta:
+        tagname = 'Property'
+
+    defaultvalue = fields_.String(tagname='DefaultValue', required=False)
+    samplevalue = fields_.String(tagname='SampleValue', default='')
+    abstract = fields_.Boolean(default=False)
+    description = fields_.String(default='')
+    displayname = fields_.String(attrname='displayName')
+    hidden = fields_.Boolean(default=False)
+    name = fields_.String()
+    nullable = fields_.Boolean(default=False)
+    readonly = fields_.Boolean(default=False)
+    popup = fields_.Boolean(default=False)
+    type = fields_.String(default=PropertyType.String)
+    visibility = fields_.String(default=VisibilityType.Public)
 
 
-@XMLAttribute(name='name')
-@XMLAttribute(name='popup', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='type', default=PropertyType.String)
 class TransformPropertySetting(MaltegoElement):
 
-    def __init__(self, name, value, **kwargs):
-        super(TransformPropertySetting, self).__init__("Property")
-        self.name = name
-        self.text = value
-        self.popup = kwargs.get('popup', self.popup)
-        self.type = kwargs.get('type', self.type)
+    class meta:
+        tagname='Property'
+
+    name = fields_.String()
+    popup = fields_.Boolean(default=False)
+    type = fields_.String(default=PropertyType.String)
+    value = fields_.String(tagname=".")
 
 
 def CmdLineTransformProperty(cmd=''):
     return TransformProperty(
-        'transform.local.command',
-        cmd,
-        'Command line',
-        'The command to execute for this transform'
+        name='transform.local.command',
+        defaultvalue=cmd,
+        displayname='Command line',
+        description='The command to execute for this transform'
     )
 
 
 def CmdLineTransformPropertySetting(cmd=''):
     return TransformPropertySetting(
-        'transform.local.command',
-        cmd
+        name='transform.local.command',
+        value=cmd
     )
 
 
 def CmdParmTransformProperty(params=''):
     return TransformProperty(
-        'transform.local.parameters',
-        params,
-        'Command parameters',
-        'The parameters to pass to the transform command'
+        name='transform.local.parameters',
+        defaultvalue=params,
+        displayname='Command parameters',
+        description='The parameters to pass to the transform command'
     )
 
 
 def CmdParmTransformPropertySetting(params=''):
     return TransformPropertySetting(
-        'transform.local.parameters',
-        params
+        name='transform.local.parameters',
+        value=params
     )
 
 
 def CmdCwdTransformProperty(cwd=''):
     return TransformProperty(
-        'transform.local.working-directory',
-        cwd,
-        'Working directory',
-        'The working directory used when invoking the executable',
-        sample_val='/'
+        name='transform.local.working-directory',
+        defaultvalue=cwd,
+        displayname='Working directory',
+        description='The working directory used when invoking the executable',
+        samplevalue='/'
     )
 
 
 def CmdCwdTransformPropertySetting(cwd=''):
     return TransformPropertySetting(
-        'transform.local.working-directory',
-        cwd
+        name='transform.local.working-directory',
+        value=cwd
     )
 
 
 def CmdDbgTransformProperty(dbg=False):
     return TransformProperty(
-        'transform.local.debug',
-        str(dbg).lower(),
-        'Show debug info',
-        "When this is set, the transform's text output will be printed to the output window",
-        sample_val=False,
+        name='transform.local.debug',
+        defaultvalue=str(dbg).lower(),
+        displayname='Show debug info',
+        description="When this is set, the transform's text output will be printed to the output window",
+        samplevalue='false',
         type=PropertyType.Boolean
     )
 
 
 def CmdDbgTransformPropertySetting(dbg=False):
     return TransformPropertySetting(
-        'transform.local.debug',
-        str(dbg).lower(),
+        name='transform.local.debug',
+        value=str(dbg).lower(),
         type=PropertyType.Boolean
     )
 
 
-@XMLAttribute(name='enabled', type=XSAttributeType.Bool, default=True)
-@XMLAttribute(name='disclaimerAccepted', propname='accepted', type=XSAttributeType.Bool, default=False)
-@XMLAttribute(name='showHelp', propname='show', type=XSAttributeType.Bool, default=True)
-@XMLSubElement(name='Properties', propname='properties', type=XSSubElementType.List)
 class TransformSettings(MaltegoElement):
 
-    def __init__(self, **kwargs):
-        super(TransformSettings, self).__init__(self.__class__.__name__)
-        self.enabled = kwargs.get('enabled', self.enabled)
-        self.accepted = kwargs.get('accepted', self.accepted)
-        self.show = kwargs.get('show', self.show)
-        self.appendelements(kwargs.get('properties'))
+    enabled = fields_.Boolean(default=True)
+    accepted = fields_.Boolean(default=False, attrname='disclaimerAccepted')
+    showhelp = fields_.Boolean(default=True, attrname='showHelp')
+    properties = fields_.List(TransformPropertySetting, tagname='Properties')
 
     def appendelement(self, other):
         if isinstance(other, TransformPropertySetting):
-            self.properties += other
+            self.properties.append(other)
 
     def removeelement(self, other):
         if isinstance(other, TransformPropertySetting):
-            self.properties -= other
+            self.properties.remove(other)
 
 
-
-@XMLAttribute(name='version', default=0.0, type=XSAttributeType.Float)
 class Protocol(MaltegoElement):
 
-    def __init__(self, **kwargs):
-        super(Protocol, self).__init__(self.__class__.__name__)
-        self.version = kwargs.get('version', self.version)
+    version = fields_.String(default='2.0')
 
 
-@XMLAttribute(name='type', default='none')
+class AuthenticationType(object):
+    Anonymous = 'none'
+    Mac = 'mac'
+    License = 'license'
+
+
 class Authentication(MaltegoElement):
 
-    def __init__(self, **kwargs):
-        super(Authentication, self).__init__(self.__class__.__name__)
-        self.type = kwargs.get('type', self.type)
+    type = fields_.String(default=AuthenticationType.Anonymous)
 
 
-@XMLAttribute(name='name')
-class Transform(MaltegoElement):
-
-    def __init__(self, name):
-        super(Transform, self).__init__(self.__class__.__name__)
-        self.name = name
-
-
-@XMLAttribute(name='name', default='Local')
-@XMLAttribute(name='enabled', type=XSAttributeType.Bool, default=True)
-@XMLAttribute(name='description', default='Local transforms hosted on this machine')
-@XMLAttribute(name='url', default='http://localhost')
-@XMLSubElement(name='LastSync', propname='lastsync', default=time.strftime('%Y-%m-%d'))
-@XMLSubElement(name='Transforms', propname='transforms', type=XSSubElementType.List)
 class MaltegoServer(MaltegoElement):
 
-    def __init__(self, **kwargs):
-        super(MaltegoServer, self).__init__(self.__class__.__name__)
-        self.name = kwargs.get('name', self.name)
-        self.enabled = kwargs.get('enabled', self.enabled)
-        self.description = kwargs.get('description', self.description)
-        self.url = kwargs.get('url', self.url)
-        self.lastsync = kwargs.get('lastsync', self.lastsync)
-        self.appendelements(kwargs.get('protocol'))
-        self.appendelements(kwargs.get('authentication'))
-        self.appendelements(kwargs.get('transforms'))
+    name = fields_.String(default='Local')
+    enabled = fields_.Boolean(default=True)
+    description = fields_.String(default='Local transforms hosted on this machine')
+    url = fields_.String(default='http://localhost')
+    lastsync = fields_.String(tagname='LastSync', default=time.strftime('%Y-%m-%d'))
+    protocol = fields_.Model(Protocol)
+    authentication = fields_.Model(Authentication)
+    transforms = fields_.List(Transform, tagname='Transforms')
 
     def appendelement(self, other):
         if isinstance(other, Transform):
-            self.transforms += other
-        elif isinstance(other, Protocol) or isinstance(other, Authentication):
-            self.append(other)
+            self.transforms.append(other)
 
     def removeelement(self, other):
         if isinstance(other, Transform):
-            self.transforms -= other
-        elif isinstance(other, Protocol) or isinstance(other, Authentication):
-            self.remove(other)
+            self.transforms.remove(other)
 
 
+class EntityCategory(MaltegoElement):
+
+    name = fields_.String()
+
+
+class attr(MaltegoElement):
+    name = fields_.String()
+    stringvalue = fields_.String(required=False)
+    boolvalue = fields_.Boolean(required=False)
+
+
+class fileobject(MaltegoElement):
+
+    name = fields_.String()
+    attrs = fields_.Dict(attr, key='name')
+
+    def appendelement(self, other):
+        if isinstance(other, attr):
+            self.attrs[other.name] = other
+
+    def removeelement(self, other):
+        if isinstance(other, attr):
+            del self.attrs[other.name]
+
+
+class attributes(MaltegoElement):
+
+    version = fields_.String(default='1.0')
+    fileobjects = fields_.Dict(fileobject, key='name')
+
+    def appendelement(self, other):
+        if isinstance(other, fileobject):
+            self.fileobjects[other.name] = other
+
+    def removeelement(self, other):
+        if isinstance(other, fileobject):
+            del self.fileobjects[other.name]
+
+
+class Properties(MaltegoElement):
+
+    fields = fields_.Dict(TransformProperty, key='name', tagname='Fields')
+
+    def appendelement(self, other):
+        if isinstance(other, TransformProperty):
+            self.fields[other.name] = other
+
+    def removeelement(self, other):
+        if isinstance(other, TransformProperty):
+            del self.fields[other.name]
+
+
+class MaltegoTransform(MaltegoElement):
+
+    name = fields_.String()
+    displayname = fields_.String(attrname='displayName', default='')
+    abstract = fields_.String(default=False)
+    template = fields_.Boolean(default=False)
+    visibility = fields_.String(default=VisibilityType.Public)
+    description = fields_.String(default='')
+    helpurl = fields_.String(attrname='helpURL', default='')
+    author = fields_.String(default='')
+    owner = fields_.String(default='')
+    locrel = fields_.String(attrname='locationRelevance', default='global')
+    version = fields_.String(default='1.0')
+    requireinfo = fields_.Boolean(default=False, attrname='requireDisplayInfo')
+    adapter = fields_.String(tagname='TransformAdapter', default=TransformAdapter.Local)
+    properties = fields_.Model(Properties)
+    input = fields_.List(InputConstraint, tagname='InputConstraints', required=False)
+    output = fields_.List(OutputEntity, tagname='OutputEntities', required=False)
+    help = fields_.CDATA(tagname='Help', default='')
+    disclaimer = fields_.CDATA(tagname='Disclaimer', default='')
+    sets = fields_.List(Set, tagname='defaultSets')
+    stealthlevel = fields_.Integer(tagname='StealthLevel', default=0)
+    authenticator = fields_.String(tagname='Authenticator', required=False)
+
+    def appendelement(self, other):
+        if isinstance(other, Set):
+            self.sets.append(other)
+        elif isinstance(other, TransformProperty):
+            self.properties.fields_.append(other)
+        elif isinstance(other, InputConstraint) or isinstance(other, InputEntity):
+            self.input.append(other)
+        elif isinstance(other, OutputEntity):
+            self.output.append(other)
+
+    def removeelement(self, other):
+        if isinstance(other, Set):
+            self.sets.remove(other)
+        if isinstance(other, TransformProperty):
+            self.properties.fields_.remove(other)
+        elif isinstance(other, InputConstraint) or isinstance(other, InputEntity):
+            self.input.remove(other)
+        elif isinstance(other, OutputEntity):
+            self.output.remove(other)
+
+
+class Field(MaltegoElement):
+
+    name = fields_.String()
+    type = fields_.String()
+    nullable = fields_.Boolean(default=True)
+    hidden = fields_.Boolean(default=False)
+    readonly = fields_.Boolean(default=False)
+    description = fields_.String()
+    displayname = fields_.String(attrname='displayName')
+    defaultvalue = fields_.String(tagname='DefaultValue', required=False)
+    samplevalue = fields_.String(tagname='SampleValue', default='')
+
+
+class Groups(MaltegoElement):
+    pass
+
+
+class Fields(MaltegoElement):
+
+    fields = fields_.Dict(Field, key='name', tagname='Fields')
+
+
+class EntityProperties(MaltegoElement):
+
+    class meta:
+        tagname = 'Properties'
+
+    value = fields_.String(required=False)
+    groups = fields_.Model(Groups, required=False)
+
+
+class RegexGroup(MaltegoElement):
+
+    property = fields_.String()
+
+
+class Converter(MaltegoElement):
+
+    value = fields_.CDATA(default='', tagname='Value')
+    regexgroups = fields_.Dict(RegexGroup, key='property', required=False)
+
+
+class MaltegoEntity(MaltegoElement):
+
+    id = fields_.String()
+    displayname = fields_.String(attrname='displayName')
+    plural = fields_.String(attrname='displayNamePlural')
+    description = fields_.String(default='')
+    category = fields_.String()
+    smallicon = fields_.String(attrname='smallIconResource', required=False)
+    largeicon = fields_.String(attrname='largeIconResource', required=False)
+    allowedRoot = fields_.Boolean(default=True)
+    conversion_order = fields_.Integer(attrname='conversionOrder', default=2147483647)
+    visible = fields_.Boolean(default=True)
+    largeicontag = fields_.String(tagname='Icon', required=False)
+    smallicontag = fields_.String(tagname='SmallIcon', required=False)
+    converter = fields_.Model(Converter, required=False)
+    properties = fields_.Model(EntityProperties)
