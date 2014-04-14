@@ -1,125 +1,81 @@
 #!/usr/bin/env python
 
 from distutils.command.install import install
-from canari.maltego.message import EntityField, Field
-from pkg_resources import resource_filename
 from distutils.dist import Distribution
-from distutils.version import LooseVersion
+from argparse import Action
 from datetime import datetime
 from string import Template
 import unicodedata
 import subprocess
-import threading
-import inspect
 import sys
 import os
 import re
 
+from pkg_resources import resource_filename
 
+from canari.commands.framework import Command
 from canari.config import CanariConfigParser
-from canari.maltego.entities import Unknown
 
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
-__credits__ = []
+__credits__ = ['Andrew Udvare']
 
 __license__ = 'GPL'
-__version__ = '0.5'
+__version__ = '0.6'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
 
-def synchronized(func):
+class ParseFieldsAction(Action):
+    """
+    Custom argparse action to parse arguments for the run- and debug-transform commands. This ensures that all
+    positional arguments are parsed and stored correctly.
+    """
 
-    func.__lock__ = threading.RLock()
+    def __call__(self, parser, namespace, values, option_string=None):
+        # Does the value argument have an equals ('=') sign that is not escaped and is the params argument populated?
+        if namespace.params and re.search(r'(?<=[^\\])=', namespace.value):
+            # if so, apply fix and pop last element of namespace.params into namespace.value
+            # and copy what was in namespace.value into namespace.fields to fix everything
+            values = namespace.value
+            namespace.value = namespace.params.pop().replace('\=', '=')
+            namespace.fields = values
+            # Next parse our fields argument into a dictionary
+            fs = re.split(r'(?<=[^\\])#', values)
+            if fs:
+                namespace.fields = dict(
+                    map(
+                        lambda x: [
+                            c.replace('\#', '#').replace('\=', '=').replace('\\\\', '\\')
+                            for c in re.split(r'(?<=[^\\])=', x, 1)
+                        ],
+                        fs
+                    )
+                )
 
-    def synced_func(*args, **kws):
-        with func.__lock__:
-            return func(*args, **kws)
 
-    return synced_func
-
-
-def get_transform_version(transform):
-    spec = inspect.getargspec(transform)
-    if spec.varargs is not None:
-        return 3
-    n = len(spec.args)
-    if 2 <= n <= 3:
-        return n
-    raise Exception('Could not determine transform version.')
-
-
-def fix_etree():
-    try:
-        from xml.etree.cElementTree import XML
-        e = XML('<test><t a="1"/></test>')
-        e.find('t[@a="1"]')
-    except SyntaxError:
-        import canari.xmltools.fixetree
+@Command(description='Centralized Canari Management System')
+def canari_main(opts):
+    """
+    This is the main function for the Canari commander. Nothing special here.
+    """
+    fix_pypath()
+    opts.command_function(opts)
 
 
 def get_bin_dir():
+    """
+    Returns the absolute path of the installation directory for the Canari scripts.
+    """
     d = install(Distribution())
     d.finalize_options()
     return d.install_scripts
 
 
-def get_commands(module='canari.commands'):
-    commands = {}
-    sc = __import__(module, globals(), locals(), fromlist=['__all__'])
-    for c in sc.__all__:
-        m = __import__('%s.%s' % (module, c), globals(), locals(), fromlist=['run', 'help_'])
-        if 'run' in m.__dict__:
-            commands[cmd_name(m.__name__)] = m
-    return commands
-
-
-def _detect_settings_dir(d):
-    vs = [ i for i in os.listdir(d) if os.path.isdir(os.path.join(d, i)) if os.path.isdir(os.path.join(d, i, 'config'))]
-    if len(vs) == 1:
-        return os.path.join(d, vs[0])
-    else:
-        while True:
-            print('Multiple versions of Maltego detected: ')
-            for i, v in enumerate(vs):
-                print('[%d] Maltego %s' % (i, v))
-            r = raw_input('Please select which version you wish to use [0]: ')
-            try:
-                if not r:
-                    return os.path.join(d, vs[0])
-                elif int(r) < len(vs):
-                    return os.path.join(d, vs[int(r)])
-            except ValueError:
-                pass
-            print('Invalid selection... %s' % repr(r))
-    print('Could not automatically find Maltego\'s settings directory. Use the -w parameter to specify its location, instead.')
-
-
 def to_utf8(s):
     return unicodedata.normalize('NFKD', unicode(s)).encode('ascii', 'ignore')
-
-
-def detect_settings_dir():
-    d = None
-    if sys.platform.startswith('linux'):
-        d = _detect_settings_dir(os.path.join(os.path.expanduser('~'), '.maltego'))
-    elif sys.platform == 'darwin':
-        d = _detect_settings_dir(os.path.join(os.path.expanduser('~'), 'Library', 'Application Support', 'maltego'))
-    elif sys.platform == 'win32':
-        d = _detect_settings_dir(os.path.join(os.environ['APPDATA'], '.maltego'))
-    else:
-        raise NotImplementedError('Unknown or unsupported OS: %s' % repr(sys.platform))
-    return d
-
-
-def maltego_version(d):
-    if not d or os.path.sep not in d:
-        raise Exception('Must supply the full path to the Maltego settings directory in order to determine version.')
-    version = os.path.basename(d)
-    return LooseVersion(version[1:]) if version.startswith('v') else LooseVersion(version)
 
 
 def sudo(args):
@@ -128,14 +84,27 @@ def sudo(args):
     return p.returncode
 
 
+def uproot():
+    if os.name == 'posix' and not os.geteuid():
+        login = os.getlogin()
+
+        if login != 'root':
+            print 'Why are you using root to run this command? You should be using %s! Bringing you down...' % login
+            import pwd
+
+            user = pwd.getpwnam(login)
+            os.setgid(user.pw_gid)
+            os.setuid(user.pw_uid)
+
+
 def read_template(name, values):
     t = Template(file(resource_filename('canari.resources.template', '%s.plate' % name)).read())
     return t.substitute(**values)
 
 
-def write_template(fname, data):
-    print('creating file %s...' % fname)
-    with file(fname, mode='wb') as w:
+def write_template(dst, data):
+    print('creating file %s...' % dst)
+    with file(dst, mode='wb') as w:
         w.write(data)
 
 
@@ -149,29 +118,6 @@ def build_skeleton(*args):
             d = os.sep.join(d)
         print('creating directory %s' % d)
         os.mkdir(d)
-
-
-def highlight(s, color, bold):
-
-    if os.name == 'posix':
-        attr = []
-        if color == 'green':
-            # green
-            attr.append('32')
-        elif color == 'red':
-            # red
-            attr.append('31')
-        else:
-            attr.append('30')
-        if bold:
-            attr.append('1')
-        s = '\x1b[%sm%s\x1b[0m' % (';'.join(attr), s)
-
-    return s
-
-
-def croak(exc):
-    print(highlight(exc, 'red', None))
 
 
 def fix_pypath():
@@ -188,43 +134,14 @@ def fix_binpath(paths):
 
 
 def import_transform(script):
-    fix_pypath()
     return __import__(script, globals(), locals(), ['dotransform'])
 
 
 def import_package(package):
-    fix_pypath()
     return __import__(package, globals(), locals(), ['*'])
 
 
-def cmd_name(name):
-    return name.replace('canari.commands.', '').replace('_', '-')
-
-
-def console_message(msg, tab=-1):
-    tab += 1
-    print('%s`- %s: %s %s' % (
-        '  ' * tab,
-        highlight(msg.tag, None, True),
-        highlight(msg.text, 'red', False) if msg.text is not None else '',
-        highlight(msg.attrib, 'green', True) if msg.attrib.keys() else ''
-        ))
-    for c in msg.getchildren():
-        print('  %s`- %s: %s %s' % (
-            '  ' * tab,
-            highlight(c.tag, None, True),
-            highlight(c.text, 'red', False) if c.text is not None else '',
-            highlight(c.attrib, 'green', True) if c.attrib.keys() else ''
-            ))
-        for sc in c.getchildren():
-            tab += 1
-            console_message(sc, tab)
-            tab -= 1
-    tab -= 1
-
-
 def init_pkg():
-
     root = project_root()
 
     if root is not None:
@@ -233,11 +150,11 @@ def init_pkg():
             c = CanariConfigParser()
             c.read(conf)
             return {
-                'author' : c['metadata/author'],
-                'email' : c['metadata/email'],
-                'maintainer' : c['metadata/maintainer'],
-                'project' : c['metadata/project'],
-                'year' : datetime.now().year
+                'author': c['metadata/author'],
+                'email': c['metadata/email'],
+                'maintainer': c['metadata/maintainer'],
+                'project': c['metadata/project'],
+                'year': datetime.now().year
             }
 
     return {
@@ -255,12 +172,10 @@ def project_root():
         if os.path.exists(marker) and os.path.isfile(marker):
             return os.path.dirname(os.path.realpath(marker))
         marker = '..%s%s' % (os.sep, marker)
-    print 'Unable to determine project root.'
-    exit(-1)
+    raise ValueError('Unable to determine project root.')
 
 
 def project_tree():
-
     root = project_root()
 
     tree = dict(
@@ -284,33 +199,50 @@ def project_tree():
     return tree
 
 
-def parse_bool(ans, default='y'):
-
+def parse_bool(question, default=True):
+    choices = 'Y/n' if default else 'y/N'
+    default = 'Y' if default else 'N'
     while True:
-        ans = raw_input(ans).lower() or default
-        if ans.startswith('y'):
+        ans = raw_input('%s [%s]: ' % (question, choices)).upper() or default
+        if ans.startswith('Y'):
             return True
-        elif ans.startswith('n'):
+        elif ans.startswith('N'):
             return False
+        else:
+            print('Invalid selection (%s) must be either [y]es or [n]o.' % ans)
 
 
-def guess_entity_type(transform_module, fields):
-    if not hasattr(transform_module.dotransform, 'inputs') or not transform_module.dotransform.inputs:
-        return Unknown
-    if len(transform_module.dotransform.inputs) == 1 or not fields:
-        return transform_module.dotransform.inputs[0][1]
-    num_matches = 0
-    best_match = Unknown
-    for category, entity_type in transform_module.dotransform.inputs:
-        l = len(set(entity_type._fields_to_properties_.keys()).intersection(fields.keys()))
-        if l > num_matches:
-            num_matches = l
-            best_match = entity_type
-    return best_match
+def parse_int(question, choices, default=0):
+    while True:
+        for i, c in enumerate(choices):
+            print('[%d] - %s' % (i, c))
+        ans = raw_input('%s [%d]: ' % (question, default)) or default
+        try:
+            ans = int(ans)
+            if not 0 <= ans <= i:
+                raise ValueError
+            return ans
+        except ValueError:
+            print('Invalid selection (%s) must be an integer between 0 and %d.' % (ans, i))
 
 
-def to_entity(entity_type, value, fields):
-    e = entity_type(value)
-    for k, v in fields.iteritems():
-        e += Field(k, v)
-    return e
+def parse_str(question, default):
+    return raw_input('%s [%s]: ' % (question, default)) or default
+
+
+class pushd(object):
+    """
+    Ripped from here: https://gist.github.com/Tatsh/7131812
+    """
+
+    def __init__(self, dir_name):
+        self.cwd = os.path.realpath(dir_name)
+        self.original_dir = None
+
+    def __enter__(self):
+        self.original_dir = os.getcwd()
+        os.chdir(self.cwd)
+        return self
+
+    def __exit__(self, type_, value, tb):
+        os.chdir(self.original_dir)
