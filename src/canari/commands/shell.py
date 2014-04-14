@@ -2,14 +2,15 @@
 
 import os
 import sys
-
 from code import InteractiveConsole
-from argparse import ArgumentParser
 from atexit import register
+from canari.pkgutils.transform import TransformDistribution
 
-from common import console_message, cmd_name, highlight, fix_pypath, fix_binpath, import_package
-from canari.maltego.message import MaltegoTransformResponseMessage
+from common import canari_main, fix_pypath, fix_binpath, import_package, pushd
+from framework import SubCommand, Argument
 from canari.config import config
+from canari.maltego.utils import highlight, console_message, local_transform_runner
+import canari
 
 
 __author__ = 'Nadeem Douba'
@@ -17,30 +18,10 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.3'
+__version__ = '0.4'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
-
-
-parser = ArgumentParser(
-    description='Creates a Canari debug shell for the specified transform package.',
-    usage='canari %s <package name>' % cmd_name(__name__)
-)
-
-parser.add_argument(
-    'package',
-    metavar='<package name>',
-    help='The name of the canari package you wish to load local transform from for the Canari shell session.'
-)
-
-
-def help_():
-    parser.print_help()
-
-
-def description():
-    return parser.description
 
 
 class ShellCommand(object):
@@ -54,18 +35,8 @@ class ShellCommand(object):
             print highlight("Need to be root to run this transform... sudo'ing...", 'green', True)
             os.execvp('sudo', self.sudoargs)
             return
-        return console_message(self.mod.dotransform(
-            type(
-                'MaltegoTransformRequestMessage',
-                (object,),
-                    {
-                    'value' : value,
-                    'params' : list(args),
-                    'fields' : kwargs
-                }
-            )(),
-            MaltegoTransformResponseMessage()
-        ))
+
+        local_transform_runner(self.mod, value, kwargs, list(args), config, message_writer=console_message)
 
 
 class MtgConsole(InteractiveConsole):
@@ -79,23 +50,39 @@ class MtgConsole(InteractiveConsole):
         InteractiveConsole.__init__(self, locals=transforms)
         self.init_history(os.path.expanduser('~/.mtgsh_history'))
 
-    def init_history(self, histfile):
+    def init_history(self, history_file):
         try:
             import readline
             readline.parse_and_bind('tab: complete')
             if hasattr(readline, "read_history_file"):
                 try:
-                    readline.read_history_file(histfile)
+                    readline.read_history_file(history_file)
                 except IOError:
                     pass
-                register(lambda h: readline.write_history_file(h), histfile)
+                register(lambda h: readline.write_history_file(h), history_file)
         except ImportError:
             pass
 
 
-def run(args):
-
-    opts = parser.parse_args(args)
+@SubCommand(
+    canari_main,
+    help='Creates a Canari debug shell for the specified transform package.',
+    description='Creates a Canari debug shell for the specified transform package.'
+)
+@Argument(
+    'package',
+    metavar='<package name>',
+    help='The name of the canari package you wish to load local transform from for the Canari shell session.'
+)
+@Argument(
+    '-w',
+    '--working-dir',
+    metavar='[working dir]',
+    default=None,
+    help="the path that will be used as the working directory for "
+         "the transforms being executed in the shell (default: ~/.canari/)"
+)
+def shell(opts):
 
     fix_binpath(config['default/path'])
     fix_pypath()
@@ -103,5 +90,7 @@ def run(args):
     if not opts.package.endswith('transforms'):
         opts.package = '%s.transforms' % opts.package
 
-    mtgsh = MtgConsole(opts.package)
-    mtgsh.interact(highlight('Welcome to Canari.', 'green', True))
+    t = TransformDistribution(opts.package)
+    with pushd(opts.working_dir or t.default_prefix):
+        mtg_console = MtgConsole(opts.package)
+        mtg_console.interact(highlight('Welcome to Canari %s.' % canari.__version__, 'green', True))
