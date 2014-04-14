@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+
 import os
+import sys
 
-from argparse import ArgumentParser
-
-from common import read_template, write_template, build_skeleton, cmd_name
+from common import read_template, write_template, build_skeleton, canari_main
+from framework import SubCommand, Argument
 
 
 __author__ = 'Nadeem Douba'
@@ -11,23 +12,10 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.1'
+__version__ = '0.2'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
-
-parser = ArgumentParser(
-    description='Sets up Canari Plume directory structure and configuration files.',
-    usage='canari %s [--install-dir <dir>]' % cmd_name(__name__)
-)
-
-parser.add_argument(
-    '-d',
-    '--install-dir',
-    metavar='<dir>',
-    help='The name of the canari package you wish to create.',
-    default=os.getcwd()
-)
 
 
 def write_setup(base_dir, values):
@@ -38,16 +26,19 @@ def write_setup(base_dir, values):
     os.chmod(plume_sh, 0755)
 
 
-def help_():
-    parser.print_help()
-
-
-def description():
-    return parser.description
-
-
-def run(args):
-    opts = parser.parse_args(args)
+@SubCommand(
+    canari_main,
+    help='Sets up Canari Plume directory structure and configuration files.',
+    description='Sets up Canari Plume directory structure and configuration files.'
+)
+@Argument(
+    '-d',
+    '--install-dir',
+    metavar='<dir>',
+    help='The name of the canari package you wish to create.',
+    default=os.getcwd()
+)
+def install_plume(opts):
 
     install_dir = opts.install_dir
     base_dir = os.path.join(install_dir, 'plume')
@@ -56,7 +47,7 @@ def run(args):
         working_dir=base_dir,
         config='',
         path='${PATH},/usr/local/bin,/opt/local/bin' if os.name == 'posix' else '',
-        command=' '.join(['canari deploy-plume'] + args)
+        command=' '.join(sys.argv)
     )
 
     if not os.path.exists(install_dir):
