@@ -2,9 +2,9 @@
 
 import os
 
-from tempfile import gettempdir
-from sys import maxint
+from tempfile import NamedTemporaryFile, gettempdir
 from time import time
+
 
 if os.name == 'nt':
     import msvcrt
@@ -21,6 +21,7 @@ if os.name == 'nt':
     # detect size of ULONG_PTR
     def is_64bit():
         return sizeof(c_ulong) != sizeof(c_void_p)
+
     if is_64bit():
         ULONG_PTR = c_int64
     else:
@@ -56,16 +57,27 @@ if os.name == 'nt':
     UnlockFileEx = windll.kernel32.UnlockFileEx
     UnlockFileEx.restype = BOOL
     UnlockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, LPOVERLAPPED]
+
+    def flock(file_, flags):
+        hfile = msvcrt.get_osfhandle(file_.fileno())
+        overlapped = OVERLAPPED()
+        if flags & LOCK_UN and UnlockFileEx(hfile, 0, 0, 0xFFFF0000, byref(overlapped)):
+            return
+        elif (not flags or flags & (LOCK_EX | LOCK_NB | LOCK_SH)) and \
+                LockFileEx(hfile, flags, 0, 0, 0xFFFF0000, byref(overlapped)):
+            return
+        raise IOError(GetLastError())
+
 else:
     from fcntl import flock, LOCK_EX, LOCK_NB, LOCK_SH, LOCK_UN
 
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
-__credits__ = [ 'Jonathan Feinberg' ]
+__credits__ = ['Jonathan Feinberg']
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
@@ -78,18 +90,6 @@ __all__ = [
     'ufile',
     'age'
 ]
-
-
-if os.name == 'nt':
-    def flock(file, flags):
-        hfile = msvcrt.get_osfhandle(file.fileno())
-        overlapped = OVERLAPPED()
-        if flags & LOCK_UN and UnlockFileEx(hfile, 0, 0, 0xFFFF0000, byref(overlapped)):
-            return
-        elif (not flags or flags & (LOCK_EX | LOCK_NB | LOCK_SH)) and \
-             LockFileEx(hfile, flags, 0, 0, 0xFFFF0000, byref(overlapped)):
-            return
-        raise IOError(GetLastError())
 
 
 def cookie(name):
@@ -130,18 +130,9 @@ class fmutex(fsemaphore):
         self.unlock()
 
 
-class ufile(file):
-
-    def __init__(self, name):
-        if os.path.exists(name):
-            p, n = os.path.split(name)
-            n, e = os.path.splitext(n)
-
-            for i in xrange(2, maxint):
-                name = os.path.join(p, '%s(%d)%s') % (n, i, e)
-                if not os.path.exists(name):
-                    break
-        super(ufile, self).__init__(name, mode='wb')
+def ufile(name, delete=False):
+    n, e = os.path.splitext(name)
+    return NamedTemporaryFile(suffix=e, prefix='%s_' % n, delete=delete)
 
 
 def age(path):
