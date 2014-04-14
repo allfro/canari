@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-from common import cmd_name, to_utf8
-
 from csv import writer
+import os
 from xml.etree.cElementTree import XML
-from argparse import ArgumentParser
 from zipfile import ZipFile
+
+from framework import SubCommand, Argument
+from common import canari_main, to_utf8
 
 
 __author__ = 'Nadeem Douba'
@@ -13,43 +14,31 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.4'
+__version__ = '0.5'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
-parser = ArgumentParser(
-    description='Convert Maltego graph files (*.mtgx) to comma-separated values (CSV) file.',
-    usage='canari %s <graph>' % cmd_name(__name__)
-)
 
-parser.add_argument(
+@SubCommand(
+    canari_main,
+    help='Convert Maltego graph files (*.mtgx) to comma-separated values (CSV) file.',
+    description='Convert Maltego graph files (*.mtgx) to comma-separated values (CSV) file.'
+)
+@Argument(
     'graph',
     metavar='<graph>',
     help='The name of the graph file you wish to convert to CSV.',
-    )
-
-
-def parse_args(args):
-    return parser.parse_args(args)
-
-
-def help_():
-    parser.print_help()
-
-
-def description():
-    return parser.description
-
-
-def run(args):
-    opts = parse_args(args)
+)
+def mtgx2csv(opts):
 
     zipfile = ZipFile(opts.graph)
     graphs = filter(lambda x: x.endswith('.graphml'), zipfile.namelist())
 
     for f in graphs:
-        with open(f.split('/')[1].split('.')[0] + '.csv', 'wb') as csvfile:
+        filename = '%s_%s' % (opts.graph.replace('.', '_', 1), os.path.basename(f).replace('.graphml', '.csv', 1))
+        print 'Writing data from %s/%s to %s...' % (opts.graph, f, filename)
+        with open(filename, 'wb') as csvfile:
             csv = writer(csvfile)
             xml = XML(zipfile.open(f).read())
             links = {}
