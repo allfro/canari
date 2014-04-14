@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from argparse import ArgumentParser
 from datetime import datetime
 from getpass import getuser
 from os import path
 
-from common import read_template, write_template, generate_all, build_skeleton, cmd_name, parse_bool
+from common import read_template, write_template, generate_all, build_skeleton, canari_main, parse_bool, parse_str
+from framework import SubCommand, Argument
 import canari
 
 
@@ -14,21 +14,10 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.7'
+__version__ = '0.8'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
-
-parser = ArgumentParser(
-    description='Creates a Canari transform package skeleton.',
-    usage='canari %s <package name>' % cmd_name(__name__)
-)
-
-parser.add_argument(
-    'package',
-    metavar='<package name>',
-    help='The name of the canari package you wish to create.'
-)
 
 
 def write_setup(package_name, values):
@@ -78,7 +67,7 @@ def write_resources(package_name, resources, init, values):
 
 
 def write_common(transforms, init, values):
-    if values['example']:
+    if values['create_example']:
         write_template(
             path.join(transforms, '__init__.py'),
             init + generate_all('common', 'helloworld')
@@ -105,33 +94,34 @@ def write_common(transforms, init, values):
     )
 
 
-def help_():
-    parser.print_help()
-
-
-def description():
-    return parser.description
-
-
 def ask_user(defaults):
     print('Welcome to the Canari transform package wizard.')
 
-    if not parse_bool('Would you like to specify authorship information? [Y/n]: '):
-        return
+    while True:
+        if not parse_bool('Would you like to specify authorship information?', defaults['create_authorship']):
+            return
 
-    defaults['description'] = raw_input('Project description [%s]: ' % defaults['description']) or defaults[
-        'description']
-    defaults['example'] = parse_bool('Generate an example transform? [Y/n]: ')
-    defaults['author'] = raw_input('Author name [%s]: ' % defaults['author']) or defaults['author']
-    defaults['email'] = raw_input('Author email []: ') or ''
-    defaults['maintainer'] = raw_input('Maintainer name [%s]: ' % defaults['author']) or defaults['author']
+        defaults['description'] = parse_str('Project description', defaults['description'])
+        defaults['create_example'] = parse_bool('Generate an example transform?', defaults['create_example'])
+        defaults['author'] = parse_str('Author name', defaults['author'])
+        defaults['email'] = parse_str('Author email', defaults['email'])
+        defaults['maintainer'] = parse_str('Maintainer name', defaults['author'])
 
-    if not parse_bool('Are you satisfied with this information? [Y/n]: '):
-        return ask_user(defaults)
+        if parse_bool('Are you satisfied with this information?'):
+            return
 
 
-def run(args):
-    opts = parser.parse_args(args)
+@SubCommand(
+    canari_main,
+    help='Creates a Canari transform package skeleton.',
+    description='Creates a Canari transform package skeleton.'
+)
+@Argument(
+    'package',
+    metavar='<package name>',
+    help='The name of the canari package you wish to create.'
+)
+def create_package(opts):
 
     package_name = opts.package
     capitalized_package_name = package_name.capitalize()
@@ -141,12 +131,13 @@ def run(args):
         'entity': 'My%sEntity' % capitalized_package_name,
         'base_entity': '%sEntity' % capitalized_package_name,
         'project': capitalized_package_name,
+        'create_authorship': True,
         'author': getuser(),
         'year': datetime.now().year,
         'namespace': package_name,
         'email': '',
         'maintainer': getuser(),
-        'example': True,
+        'create_example': True,
         'description': '',
         'canari_version': canari.__version__
     }
