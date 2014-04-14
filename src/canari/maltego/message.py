@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from canari.xmltools.oxml import *
+from canari.xmltools.oxml import MaltegoElement, fields as fields_
 
 from datetime import datetime, date, timedelta
 from numbers import Number
-from re import sub, compile, match
+import re
 
 
 __author__ = 'Nadeem Douba'
@@ -12,22 +12,22 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.4'
+__version__ = '0.5'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
 __all__ = [
-    'timespan',
-    'Message',
-    'MaltegoElement',
-    'MaltegoMessage',
-    'MaltegoTransformExceptionMessage',
     'MaltegoException',
-    'MaltegoTransformResponseMessage',
+    'MaltegoTransformExceptionMessage',
+    'MaltegoTransformRequestMessage',
     'Label',
     'MatchingRule',
     'Field',
+    'UIMessageType',
+    'UIMessage',
+    'MaltegoTransformResponseMessage',
+    'MaltegoMessage',
     'StringEntityField',
     'EnumEntityField',
     'IntegerEntityField',
@@ -35,53 +35,38 @@ __all__ = [
     'FloatEntityField',
     'LongEntityField',
     'DateTimeEntityField',
-    'TimeSpanEntityField',
     'DateEntityField',
-    'EntityFieldType',
+    'timespan',
+    'TimeSpanEntityField',
     'RegexEntityField',
     'ColorEntityField',
+    'EntityFieldType',
     'EntityField',
-    'UIMessageType',
-    'UIMessage',
+    'EntityLinkField',
     'Entity',
 ]
 
 
-class Message(ElementTree):
-    pass
+class MaltegoException(MaltegoElement, Exception):
+
+    class meta:
+        tagname = 'Exception'
+
+    def __init__(self, value):
+        super(MaltegoElement, self).__init__(value=value)
+
+    value = fields_.String(tagname='.')
 
 
-class MaltegoElement(Element):
-    pass
-
-
-class MaltegoMessage(MaltegoElement):
-
-    def __init__(self, message):
-        super(MaltegoMessage, self).__init__(self.__class__.__name__)
-        self.append(message)
-
-
-@XMLSubElement(name='Exceptions', propname='exceptions', type=XSSubElementType.List)
 class MaltegoTransformExceptionMessage(MaltegoElement):
 
-    def __init__(self, **kwargs):
-        super(MaltegoTransformExceptionMessage, self).__init__(self.__class__.__name__)
-        self.appendelements(kwargs.get('exceptions'))
+    exceptions = fields_.List(MaltegoException, tagname='Exceptions')
 
     def appendelement(self, exception):
         if isinstance(exception, MaltegoException):
-            self.exceptions += exception
+            self.exceptions.append(exception)
         else:
-            self.exceptions += MaltegoException(str(exception))
-
-
-class MaltegoException(MaltegoElement, Exception):
-
-    def __init__(self, message):
-        super(MaltegoException, self).__init__('Exception')
-        Exception.__init__(self, message)
-        self.text = message if not isinstance(message, basestring) else message
+            self.exceptions.append(MaltegoException(str(exception)))
 
 
 class MaltegoTransformRequestMessage(object):
@@ -97,104 +82,145 @@ class MaltegoTransformRequestMessage(object):
             self.limits = dict(soft=limits.get('SoftLimit', 500), hard=limits.get('HardLimit', 10000))
 
 
-@XMLSubElement(name='UIMessages', propname='uimessages', type=XSSubElementType.List)
-@XMLSubElement(name='Entities', propname='entities', type=XSSubElementType.List)
-class MaltegoTransformResponseMessage(MaltegoElement):
-
-    def __init__(self, **kwargs):
-        super(MaltegoTransformResponseMessage, self).__init__(self.__class__.__name__)
-        self.appendelements(kwargs.get('entities'))
-        self.appendelements(kwargs.get('uimessages'))
-
-    def appendelement(self, other):
-        if isinstance(other, Entity):
-            self.entities += other
-        elif isinstance(other, UIMessage):
-            self.uimessages += other
-
-    def removeelement(self, other):
-        if isinstance(other, Entity):
-            self.entities -= other
-        elif isinstance(other, UIMessage):
-            self.uimessages -= other
-
-
-@XMLAttribute(name='Name', propname='name')
-@XMLAttribute(name='Type', propname='type', default='text/text')
-@XMLSubElement(name='CDATA', propname='cdata')
 class Label(MaltegoElement):
 
-    def __init__(self, name, value, **kwargs):
-        super(Label, self).__init__(self.__class__.__name__)
-        self.name = name
-        self.type = kwargs.get('type', self.type)
-        if self.type == 'text/html':
-            self.cdata = value
-        else:
-            self.text = str(value) if not isinstance(value, basestring) else value
+    def __init__(self, name=None, value=None, **kwargs):
+        super(Label, self).__init__(name=name, value=value, **kwargs)
+
+    value = fields_.CDATA(tagname='.')
+    type = fields_.String(attrname='Type', default='text/text')
+    name = fields_.String(attrname='Name')
 
 
-class MatchingRule:
+class MatchingRule(object):
     Strict = "strict"
     Loose = "loose"
 
 
-@XMLAttribute(name='Name', propname='name')
-@XMLAttribute(name='DisplayName', propname='displayname')
-@XMLAttribute(name='MatchingRule', propname='matchingrule', default=MatchingRule.Strict)
 class Field(MaltegoElement):
 
-    def __init__(self, name, value, **kwargs):
-        super(Field, self).__init__(self.__class__.__name__)
-        self.name = name
-        self.matchingrule = kwargs.get('matchingrule', self.matchingrule)
-        self.displayname = kwargs.get('displayname', None)
-        self.text = str(value) if not isinstance(value, basestring) else value
+    def __init__(self, name=None, value=None, **kwargs):
+        super(Field, self).__init__(name=name, value=value, **kwargs)
+
+    name = fields_.String(attrname='Name')
+    displayname = fields_.String(attrname='DisplayName', required=False)
+    matchingrule = fields_.String(attrname='MatchingRule', default=MatchingRule.Strict)
+    value = fields_.String(tagname='.')
+
+
+class _Entity(MaltegoElement):
+
+    class meta:
+        tagname = 'Entity'
+
+    type = fields_.String(attrname='Type')
+    value = fields_.String(tagname='Value')
+    weight = fields_.Float(tagname='Weight', default=1.0)
+    fields = fields_.Dict(Field, key='name', tagname='AdditionalFields', required=False)
+    labels = fields_.Dict(Label, key='name', tagname='DisplayInformation', required=False)
+    iconurl = fields_.String(tagname='IconURL', required=False)
+
+    def appendelement(self, other):
+        if isinstance(other, Field):
+            self.fields.append(other)
+        elif isinstance(other, Label):
+            self.labels.append(other)
+
+    def removeelement(self, other):
+        if isinstance(other, Field):
+            self.fields.remove(other)
+        elif isinstance(other, Label):
+            self.labels.remove(other)
+
+
+class UIMessageType:
+    Fatal = "FatalError"
+    Partial = "PartialError"
+    Inform = "Inform"
+    Debug = "Debug"
+
+
+class UIMessage(MaltegoElement):
+
+    type = fields_.String(attrname='MessageType', default=UIMessageType.Inform)
+    value = fields_.String(tagname='.')
+
+
+class MaltegoTransformResponseMessage(MaltegoElement):
+
+    uimessages = fields_.List(UIMessage, tagname='UIMessages')
+    entities = fields_.List(_Entity, tagname='Entities')
+
+    def appendelement(self, other):
+        if isinstance(other, Entity):
+            self.entities.append(other.__entity__)
+        elif isinstance(other, _Entity):
+            self.entities.append(other)
+        elif isinstance(other, UIMessage):
+            self.uimessages.append(other)
+
+    def removeelement(self, other):
+        if isinstance(other, Entity):
+            self.entities.remove(other.__entity__)
+        elif isinstance(other, _Entity):
+            self.entities.append(other)
+        elif isinstance(other, UIMessage):
+            self.uimessages.remove(other)
+
+
+class MaltegoMessage(MaltegoElement):
+
+    message = fields_.Choice(
+        fields_.Model(MaltegoTransformExceptionMessage),
+        fields_.Model(MaltegoTransformResponseMessage),
+        fields_.Model(MaltegoTransformRequestMessage)
+    )
+
+    def __init__(self, message):
+        super(MaltegoMessage, self).__init__(message=message)
 
 
 class StringEntityField(object):
 
-    def __init__(self, name, displayname=None, decorator=None, matchingrule=MatchingRule.Strict, is_value=False):
+    def __init__(self, name, displayname=None, decorator=None, matchingrule=MatchingRule.Strict, is_value=False,
+                 **extras):
+        self.decorator = decorator
+        self.is_value = is_value
         self.name = name
         self.displayname = displayname
-        self.decorator = decorator
         self.matchingrule = matchingrule
-        self.is_value = is_value
-
-    def _find(self, obj):
-        for f in obj.fields:
-            if f.name == self.name:
-                return f
-        return None
 
     def __get__(self, obj, objtype):
-        o = self._find(obj)
-        return o.text if o is not None else None
+        if self.is_value:
+            return obj.value
+        elif self.name in obj.fields:
+            return obj.fields[self.name].value
+        return None
 
     def __set__(self, obj, val):
-        f = self._find(obj)
-        if not isinstance(val, basestring) and val is not None:
-            val = str(val)
-        if f is None and val is not None:
-            f = Field(self.name, val, displayname=self.displayname, matchingrule=self.matchingrule)
-            obj += f
-        elif f is not None and val is None:
-            obj -= f
-        else:
-            f.text = val
         if self.is_value:
-            obj._value_property = None
             obj.value = val
-            obj._value_property = self
-        if self.decorator is not None:
+        elif not val and self.name in obj.fields:
+            del obj.fields[self.name]
+        else:
+            if self.name not in obj.fields:
+                obj.fields[self.name] = Field(
+                    name=self.name,
+                    value=val,
+                    displayname=self.displayname,
+                    matchingrule=self.matchingrule
+                )
+            else:
+                obj.fields[self.name].value = val
+        if callable(self.decorator):
             self.decorator(obj, val)
 
 
 class EnumEntityField(StringEntityField):
 
-    def __init__(self, name, displayname=None, choices=[], decorator=None, matchingrule=MatchingRule.Strict,
-                 is_value=False):
-        self.choices = [str(c) if not isinstance(c, basestring) else c for c in choices]
+    def __init__(self, name, displayname=None, choices=None, decorator=None, matchingrule=MatchingRule.Strict,
+                 is_value=False, **extras):
+        self.choices = [str(c) if not isinstance(c, basestring) else c for c in choices or []]
         super(EnumEntityField, self).__init__(name, displayname, decorator, matchingrule, is_value)
 
     def __set__(self, obj, val):
@@ -277,7 +303,7 @@ class DateEntityField(StringEntityField):
 
 
 class timespan(timedelta):
-    matcher = compile('(\d+)d (\d+)h(\d+)m(\d+)\.(\d+)s')
+    matcher = re.compile('(\d+)d (\d+)h(\d+)m(\d+)\.(\d+)s')
 
     def __str__(self):
         return '%dd %dh%dm%d.%03ds' % (
@@ -312,18 +338,28 @@ class TimeSpanEntityField(StringEntityField):
 
 
 class RegexEntityField(StringEntityField):
-    pattern = '.*'
+
+    def __init__(self, name, displayname=None, pattern='.*', decorator=None, matchingrule=MatchingRule.Strict,
+                 is_value=False, **extras):
+        super(RegexEntityField, self).__init__(name, displayname, decorator, matchingrule, is_value, **extras)
+        self.pattern = re.compile(pattern)
 
     def __set__(self, obj, val):
         if not isinstance(val, basestring):
             val = str(val)
-        if match(self.pattern, val) is None:
-            raise ValueError('Failed match for %s, expected pattern %s instead.' % (repr(val), repr(self.pattern)))
+        if not self.pattern.match(val):
+            raise ValueError('Failed match for %s, expected pattern %s instead.' % (
+                repr(val), repr(self.pattern.pattern))
+            )
         super(RegexEntityField, self).__set__(obj, val)
 
 
 class ColorEntityField(RegexEntityField):
-    pattern = '^#[0-9a-fA-F]{6}$'
+
+    def __init__(self, name, displayname=None, decorator=None, matchingrule=MatchingRule.Strict, is_value=False,
+                 **extras):
+        super(ColorEntityField, self).__init__(name, displayname, '^#[0-9a-fA-F]{6}$', decorator, matchingrule,
+                                               is_value, **extras)
 
 
 class EntityFieldType:
@@ -341,39 +377,35 @@ class EntityFieldType:
 
 class EntityField(object):
 
-    _registry = []
-
     def __init__(self, link=False, **kwargs):
-        self.name = kwargs.get('name')
+        self.name = kwargs.pop('name')
         if self.name is None:
             raise ValueError("Keyword argument 'name' is required.")
-        self.property = kwargs.get('propname', sub('[^\w]+', '_', self.name))
-        # if self.property in dir(Entity):
-        #     raise ValueError("Invalid property name: %s is reserved for internal use." % repr(self.property))
+        self.property = kwargs.pop('propname', re.sub('[^\w]+', '_', self.name))
         if not link:
-            self.displayname = kwargs.get('displayname', self.name.title())
+            self.displayname = kwargs.pop('displayname', self.name.title())
         else:
-            self.displayname = kwargs.get('displayname', None)
-        self.type = kwargs.get('type', EntityFieldType.String)
-        self.required = kwargs.get('required', False)
-        self.choices = kwargs.get('choices')
-        self.matchingrule = kwargs.get('matchingrule', MatchingRule.Strict)
-        self.decorator = kwargs.get('decorator')
-        self.is_value = kwargs.get('is_value', False)
+            self.displayname = kwargs.pop('displayname', None)
+        self.type = kwargs.pop('type', EntityFieldType.String)
+        self.required = kwargs.pop('required', False)
+        self.matchingrule = kwargs.pop('matchingrule', MatchingRule.Strict)
+        self.decorator = kwargs.pop('decorator', None)
+        self.is_value = kwargs.pop('is_value', False)
+        self.extras = kwargs
 
     def __call__(self, cls):
-        if self.type is EntityFieldType.Enum:
-            setattr(
-                cls,
-                self.property,
-                self.type(self.name, self.displayname, self.choices, self.decorator, self.matchingrule, self.is_value)
+        setattr(
+            cls,
+            self.property,
+            self.type(
+                name=self.name,
+                displayname=self.displayname,
+                decorator=self.decorator,
+                matchingrule=self.matchingrule,
+                is_value=self.is_value,
+                **self.extras
             )
-        else:
-            setattr(
-                cls,
-                self.property,
-                self.type(self.name, self.displayname, self.decorator, self.matchingrule, self.is_value)
-            )
+        )
         cls._fields_to_properties_[self.name] = self.property
         return cls
 
@@ -383,27 +415,6 @@ class EntityLinkField(EntityField):
     def __init__(self, **kwargs):
         kwargs['name'] = 'link#%s' % kwargs.get('name')
         super(EntityLinkField, self).__init__(link=True, **kwargs)
-
-
-class UIMessageType:
-    Fatal = "FatalError"
-    Partial = "PartialError"
-    Inform = "Inform"
-    Debug = "Debug"
-
-
-@XMLAttribute(name='MessageType', propname='type', default=UIMessageType.Inform)
-class UIMessage(MaltegoElement):
-
-    def __init__(self, message, **kwargs):
-        super(UIMessage, self).__init__(self.__class__.__name__)
-        self.type = kwargs.get('type', self.type)
-        self.text = str(message) if not isinstance(message, basestring) else message
-
-
-def _update_value_property(obj, val):
-    if obj._value_property:
-        obj._value_property.__set__(obj, val)
 
 
 class MetaEntityClass(type):
@@ -423,12 +434,6 @@ class MetaEntityClass(type):
         return new_cls
 
 
-@XMLSubElement(name='Value', propname='value', decorator=_update_value_property)
-@XMLSubElement(name='Weight', propname='weight', type=XSSubElementType.Integer, default=1)
-@XMLSubElement(name='IconURL', propname='iconurl')
-@XMLSubElement(name='AdditionalFields', propname='fields', type=XSSubElementType.List)
-@XMLSubElement(name='DisplayInformation', propname='labels', type=XSSubElementType.List)
-@XMLAttribute(name='Type', propname='type')
 @EntityField(name='notes#', propname='notes', link=True, matchingrule=MatchingRule.Loose)
 @EntityField(name='bookmark#', propname='bookmark', type=EntityFieldType.Integer, matchingrule=MatchingRule.Loose,
              link=True)
@@ -440,7 +445,7 @@ class MetaEntityClass(type):
 @EntityLinkField(name='maltego.link.color', propname='linkcolor', matchingrule=MatchingRule.Loose)
 @EntityLinkField(name='maltego.link.thickness', propname='linkthickness', matchingrule=MatchingRule.Loose,
                  type=EntityFieldType.Integer)
-class Entity(MaltegoElement):
+class Entity(object):
     __metaclass__ = MetaEntityClass
     _namespace_ = 'maltego'
     _name_ = None
@@ -448,48 +453,61 @@ class Entity(MaltegoElement):
     _fields_to_properties_ = {}
 
     def __init__(self, value, **kwargs):
-        super(Entity, self).__init__("Entity")
-        self.type = kwargs.pop('type', self._type_)
-        # if type_ is None:
-        #     self.type = '%s.%s' % (self.namespace, (self.__class__.__name__ if self.name is None else self.name))
-        # else:
-        #     self.type = type_
+        if isinstance(value, _Entity):
+            self._entity = value
+            for name, field in self._entity.fields.iteritems():
+                if name not in self._fields_to_properties_:
+                    self._bind_field(field)
+        else:
+            self._entity = _Entity(
+                type=kwargs.pop('type', self._type_),
+                value=value,
+                weight=kwargs.pop('weight', None),
+                iconurl=kwargs.pop('iconurl', None),
+                fields=kwargs.pop('fields', None),
+                labels=kwargs.pop('labels', None)
+            )
         self._value_property = None
-        self.value = value
-        self.weight = kwargs.pop('weight', self.weight)
-        self.iconurl = kwargs.pop('iconurl', self.iconurl)
-        self.appendelements(kwargs.pop('fields', None))
-        self.appendelements(kwargs.pop('labels', None))
         for p in kwargs:
             if hasattr(self, p):
                 setattr(self, p, kwargs[p])
 
+    def _bind_field(self, field):
+        EntityField(
+            **dict(
+                (f.field_name, getattr(field, f.field_name)) for f in field._fields
+            )
+        ).__call__(self.__class__)
+        return re.sub('[^\w]+', '_', field.name)
+
+
     def appendelement(self, other):
         if isinstance(other, Field):
-        #            display_name = other.get('DisplayName')
-        #            if display_name is None:
-        #                name = other.get('Name')
-        #                if name in self.fields.keys():
-        #                    other.set('DisplayName', self.fields[name])
             if other.name not in self._fields_to_properties_:
-                EntityField(
-                    **dict(
-                        (k.lower(), v) for k, v in other.attrib.iteritems()
-                    )
-                ).__call__(self.__class__)
-            self.fields += other
+                propname = self._bind_field(other)
+            else:
+                propname = self._fields_to_properties_[other.name]
+            setattr(self, propname, other.value)
         elif isinstance(other, Label):
-            self.labels += other
+            self.labels[other.name] = other
 
     def removeelement(self, other):
-        if isinstance(other, Field):
-            self.fields -= other
-        elif isinstance(other, Label):
-            self.labels -= other
+        if isinstance(other, Field) and other.name in self.fields:
+            del self.fields[other.name]
+        elif isinstance(other, Label) and other.name in self.labels:
+            del self.labels[other.name]
 
     @property
     def __fields__(self):
         return tuple(set(self._fields_to_properties_.values()))
+
+    @property
+    def __entity__(self):
+        return self._entity
+
+    @property
+    def __type__(self):
+        return self._type_
 
     def set_field(self, name, value):
         if name not in self._fields_to_properties_:
@@ -502,16 +520,44 @@ class Entity(MaltegoElement):
         return getattr(self, self._fields_to_properties_[name])
 
     def __getitem__(self, item):
-        if isinstance(item, int):
-            return super(Entity, self).__getitem__(item)
-        elif isinstance(item, basestring):
+        if isinstance(item, basestring):
             return self.get_field(item)
-        raise TypeError('Entity indices must be either integers or str, not %s' % type(item).__name__)
+        raise TypeError('Entity indices must be str, not %s' % type(item).__name__)
 
     def __setitem__(self, key, value):
-        if isinstance(key, int):
-            super(Entity, self).__setitem__(key, value)
-        elif isinstance(key, basestring):
+        if isinstance(key, basestring):
             self.set_field(key, value)
         else:
-            raise TypeError('Entity indices must be either integers or str, not %s' % type(value).__name__)
+            raise TypeError('Entity indices must be str, not %s' % type(value).__name__)
+
+    def __add__(self, other):
+        return self.__iadd__(other)
+
+    def __iadd__(self, other):
+        if isinstance(other, list):
+            for o in other:
+                self.appendelement(o)
+        else:
+            self.appendelement(other)
+        return self
+
+    appendelements = __iadd__
+
+    def __sub__(self, other):
+        return self.__isub__(other)
+
+    def __isub__(self, other):
+        if isinstance(other, list):
+            for o in other:
+                self.removeelement(o)
+        else:
+            self.removeelement(other)
+        return self
+
+    removeelements = __isub__
+
+    def __eq__(self, other):
+        return self.render() == other.render()
+
+    def __getattr__(self, item):
+        return getattr(self._entity, item)
