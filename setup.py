@@ -24,6 +24,13 @@ extras = [
     'readline'
 ]
 
+requires = [
+    'argparse',
+    'flask',
+    'Twisted',
+    'safedexml'
+]
+
 if os.name == 'nt':
     scripts += ['%s.bat' % s for s in scripts]
 
@@ -41,11 +48,6 @@ setup(
     package_data={
         '': ['*.conf', '*.plate']
     },
-    install_requires=[
-        'argparse',
-        'flask',
-        'Twisted',
-        'safedexml'
-    ],
+    install_requires=requires,
     dependency_links=[]
 )
