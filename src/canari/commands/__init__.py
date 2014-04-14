@@ -5,32 +5,33 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.2'
+__version__ = '0.3'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
 __all__ = [
-    'install_package',
-    'uninstall_package',
-    'mtgx2csv',
-    'csv2sheets',
-    'common',
-    'help',
-    'create_package',
-    'create_transform',
-    'debug_transform',
-    'shell',
-    'run_transform',
-    'delete_transform',
-    'rename_transform',
-    'list_commands',
-    'run_server',
-    'generate_entities',
-    'version',
     'banner',
+    'common',
+    'create_package',
     'create_profile',
+    'create_transform',
+    'csv2sheets',
+    'debug_transform',
+    'delete_transform',
+    'framework',
+    'generate_entities',
+    'help',
+    'install_package',
     'install_plume',
+    'list_commands',
     'load_plume_package',
-    'unload_plume_package'
+    'mtgx2csv',
+    'rename_transform',
+    'run_server',
+    'run_transform',
+    'shell',
+    'uninstall_package',
+    'unload_plume_package',
+    'version'
 ]
