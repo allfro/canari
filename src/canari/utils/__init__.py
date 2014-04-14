@@ -13,5 +13,6 @@ __status__ = 'Development'
 
 __all__ = [
     'fs',
+    'stack',
     'wordlist'
 ]
