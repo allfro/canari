@@ -92,7 +92,7 @@ class CanariConfigParser(SafeConfigParser):
         return value
 
     def __setitem__(self, key, value):
-        section, option = key.split('/')
+        section, option = key.split('/', 1)
         if not self.has_section(section):
             self.add_section(section)
         self.set(section, option, value)
