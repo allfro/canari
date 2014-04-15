@@ -69,17 +69,10 @@ class MaltegoTransformExceptionMessage(MaltegoElement):
             self.exceptions.append(MaltegoException(str(exception)))
 
 
-class MaltegoTransformRequestMessage(object):
+class Limits(MaltegoElement):
 
-    def __init__(self, value, fields, parameters, entity, limits=None):
-        self.value = value
-        self.fields = fields
-        self.params = parameters
-        self.entity = entity
-        if limits is None or not isinstance(limits, dict):
-            self.limits = dict(soft=500, hard=10000)
-        else:
-            self.limits = dict(soft=limits.get('SoftLimit', 500), hard=limits.get('HardLimit', 10000))
+    soft = fields_.Integer(attrname='SoftLimit', default=500)
+    hard = fields_.Integer(attrname='HardLimit', default=10000)
 
 
 class Label(MaltegoElement):
@@ -104,7 +97,7 @@ class Field(MaltegoElement):
 
     name = fields_.String(attrname='Name')
     displayname = fields_.String(attrname='DisplayName', required=False)
-    matchingrule = fields_.String(attrname='MatchingRule', default=MatchingRule.Strict)
+    matchingrule = fields_.String(attrname='MatchingRule', default=MatchingRule.Strict, required=False)
     value = fields_.String(tagname='.')
 
 
@@ -114,10 +107,10 @@ class _Entity(MaltegoElement):
         tagname = 'Entity'
 
     type = fields_.String(attrname='Type')
-    value = fields_.String(tagname='Value')
-    weight = fields_.Float(tagname='Weight', default=1.0)
     fields = fields_.Dict(Field, key='name', tagname='AdditionalFields', required=False)
     labels = fields_.Dict(Label, key='name', tagname='DisplayInformation', required=False)
+    value = fields_.String(tagname='Value')
+    weight = fields_.Integer(tagname='Weight', default=1)
     iconurl = fields_.String(tagname='IconURL', required=False)
 
     def appendelement(self, other):
@@ -141,6 +134,9 @@ class UIMessageType:
 
 
 class UIMessage(MaltegoElement):
+
+    def __init__(self, value=None, **kwargs):
+        super(UIMessage, self).__init__(value=value, **kwargs)
 
     type = fields_.String(attrname='MessageType', default=UIMessageType.Inform)
     value = fields_.String(tagname='.')
@@ -166,18 +162,6 @@ class MaltegoTransformResponseMessage(MaltegoElement):
             self.entities.append(other)
         elif isinstance(other, UIMessage):
             self.uimessages.remove(other)
-
-
-class MaltegoMessage(MaltegoElement):
-
-    message = fields_.Choice(
-        fields_.Model(MaltegoTransformExceptionMessage),
-        fields_.Model(MaltegoTransformResponseMessage),
-        fields_.Model(MaltegoTransformRequestMessage)
-    )
-
-    def __init__(self, message):
-        super(MaltegoMessage, self).__init__(message=message)
 
 
 class StringEntityField(object):
@@ -419,6 +403,8 @@ class EntityLinkField(EntityField):
 
 class MetaEntityClass(type):
 
+    registry = {}
+
     def __new__(cls, clsname, bases, attrs):
         if '_fields_to_properties_' not in attrs:
             attrs['_fields_to_properties_'] = {}
@@ -431,7 +417,15 @@ class MetaEntityClass(type):
         for base in bases:
             if '_fields_to_properties_' in base.__dict__:
                 attrs['_fields_to_properties_'].update(base._fields_to_properties_)
+        MetaEntityClass.registry[new_cls._type_] = new_cls
+        MetaEntityClass.registry[new_cls._v2type_] = new_cls
         return new_cls
+
+    @staticmethod
+    def to_entity_type(entity_type_str):
+        if entity_type_str in MetaEntityClass.registry:
+            return MetaEntityClass.registry.get(entity_type_str)
+        return MetaEntityClass.registry[None]
 
 
 @EntityField(name='notes#', propname='notes', link=True, matchingrule=MatchingRule.Loose)
@@ -563,3 +557,31 @@ class Entity(object):
 
     def __getattr__(self, item):
         return getattr(self._entity, item)
+
+
+class MaltegoTransformRequestMessage(MaltegoElement):
+
+    entities = fields_.List(_Entity, tagname='Entities')
+    parameters = fields_.Dict(Field, tagname='TransformFields', key='name')
+    limits = fields_.Model(Limits)
+
+    @property
+    def entity(self):
+        return MetaEntityClass.to_entity_type(self.entities[0].type)(self.entities[0])
+
+    @property
+    def params(self):
+        return self.parameters.get('canari.local.arguments', self.parameters)
+
+    @property
+    def value(self):
+        return self.entity.value
+
+
+class MaltegoMessage(MaltegoElement):
+
+    message = fields_.Choice(
+        fields_.Model(MaltegoTransformExceptionMessage),
+        fields_.Model(MaltegoTransformResponseMessage),
+        fields_.Model(MaltegoTransformRequestMessage)
+    )
