@@ -660,3 +660,7 @@ Right now we only have one contributor:
 - Nadeem Douba: @ndouba on Twitter
 
 Contact us any time! Canari is currently looking for help in various areas of the project.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/cmlh/canari/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
