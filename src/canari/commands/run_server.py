@@ -1,23 +1,22 @@
 #!/usr/bin/env python
-
+import hashlib
 import os
 import sys
-
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-from xml.etree.cElementTree import fromstring
 from SocketServer import ThreadingMixIn
 from ssl import wrap_socket, CERT_NONE
-from argparse import ArgumentParser
-from cStringIO import StringIO
 from socket import getfqdn
 from urlparse import urlsplit
-from re import sub, findall
-from hashlib import md5
+import re
 
+from canari.maltego.utils import get_transform_version
 from canari.maltego.message import (MaltegoTransformResponseMessage, MaltegoException, MaltegoTransformRequestMessage,
-                                    MaltegoTransformExceptionMessage, MaltegoMessage, Message)
-from common import cmd_name, import_transform, fix_binpath, fix_pypath, import_package, get_transform_version
+                                    MaltegoTransformExceptionMessage, MaltegoMessage)
+from canari.pkgutils.transform import TransformDistribution
+from common import fix_binpath, canari_main
+from framework import SubCommand, Argument
 from canari.config import config
+import canari.resource
 
 
 __author__ = 'Nadeem Douba'
@@ -25,80 +24,10 @@ __copyright__ = 'Copyright 2012, Canari Project'
 __credits__ = []
 
 __license__ = 'GPL'
-__version__ = '0.7'
+__version__ = '0.8'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
-
-parser = ArgumentParser(
-    description='Runs a transform server for the given packages.',
-    usage='canari %s <transform package> [...]' % cmd_name(__name__)
-)
-
-parser.add_argument(
-    'packages',
-    metavar='<package>',
-    help='The name of the transform packages you wish to host (e.g. mypkg.transforms).',
-    nargs='+'
-)
-
-parser.add_argument(
-    '--port',
-    metavar='<port>',
-    default=-1,
-    type=int,
-    help='The port the server will run on.'
-)
-
-parser.add_argument(
-    '--disable-ssl',
-    action='store_true',
-    default=False,
-    help='Any extra parameters that can be sent to the local transform.'
-)
-
-parser.add_argument(
-    '--enable-privileged',
-    action='store_true',
-    default=False,
-    help='DANGEROUS: permit TDS to run packages that require elevated privileges.'
-)
-
-parser.add_argument(
-    '--listen-on',
-    metavar='[address]',
-    default='',
-    help='The address of the interface to listen on.'
-)
-
-parser.add_argument(
-    '--cert',
-    metavar='[certificate]',
-    default='cert.pem',
-    help='The name of the certificate file used for the server in PEM format.'
-)
-
-parser.add_argument(
-    '--hostname',
-    metavar='[hostname]',
-    default=None,
-    help='The hostname of this transform server.'
-)
-
-parser.add_argument(
-    '--daemon',
-    default=False,
-    action='store_true',
-    help='Daemonize server (fork to background).'
-)
-
-
-def help_():
-    parser.print_help()
-
-
-def description():
-    return parser.description
 
 
 def message(m, response):
@@ -111,45 +40,32 @@ def message(m, response):
 
     v = None
     if isinstance(m, basestring):
-        for url in findall("<iconurl>\s*(file://[^\s<]+)\s*</iconurl>(?im)", m):
-            path = '/%s' % md5(url).hexdigest()
+        for url in re.findall("<iconurl>\s*(file://[^\s<]+)\s*</iconurl>(?im)", m):
+            path = '/%s' % hashlib.md5(url).hexdigest()
             new_url = '%s://%s%s' % ('https' if response.server.is_ssl else 'http', response.server.hostname, path)
             if path not in response.server.resources:
                 response.server.resources[path] = url[7:]
             m.replace(url, new_url, 1)
         v = m
     else:
-        sio = StringIO()
-        for e in m.entities:
-            if e.iconurl is not None:
-                e.iconurl = e.iconurl.strip()
-                if e.iconurl.startswith('file://'):
-                    path = '/%s' % md5(e.iconurl).hexdigest()
-                    new_url = '%s://%s%s' % ('https' if response.server.is_ssl else 'http', response.server.hostname, path)
-                    if path not in response.server.resources:
-                        response.server.resources[path] = e.iconurl[7:]
-                    e.iconurl = new_url
-
-        Message(MaltegoMessage(m)).write(sio)
-        v = sio.getvalue()
+        v = MaltegoMessage(m).render(fragment=True)
         # Get rid of those nasty unicode 32 characters
-    response.wfile.write(sub(r'(&#\d{5};){2}', r'', v))
+    response.wfile.write(v)
 
 
-def croak(error_msg, r):
+def croak(error_msg, response):
     """Throw an exception in the Maltego GUI containing error_msg."""
 
-    r.send_response(200)
-    r.send_header('Content-Type', 'text/xml')
-    r.send_header('Connection', 'close')
-    r.end_headers()
+    response.send_response(200)
+    response.send_header('Content-Type', 'text/xml')
+    response.send_header('Connection', 'close')
+    response.end_headers()
 
-    Message(
+    response.wfile.write(
         MaltegoMessage(
-            MaltegoTransformExceptionMessage(exceptions=MaltegoException(error_msg)
-            )
-        )
-    ).write(file=r.wfile)
+            message=MaltegoTransformExceptionMessage(exceptions=[MaltegoException(error_msg)])
+        ).render(fragment=True)
+    )
 
 
 class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
@@ -157,40 +73,34 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
     server_version = 'Canari/1.0'
     count = 0
 
-
     def dotransform(self, transform, valid_input_entity_types):
         try:
             if 'Content-Length' not in self.headers:
                 self.send_error(500, 'What?')
                 return
-
             request_str = self.rfile.read(int(self.headers['Content-Length']))
 
-            xml = fromstring(request_str).find('MaltegoTransformRequestMessage')
+            msg = MaltegoTransformRequestMessage.parse(request_str).message
 
-            e = xml.find('Entities/Entity')
-            entity_type = e.get('Type', '')
+            e = msg.entity
+            entity_type = e.type
 
             if valid_input_entity_types and entity_type not in valid_input_entity_types:
                 self.send_error(400, 'Unsupported input entity!')
                 return
 
-            value = e.find('Value').text or ''
-            fields = dict([(f.get('Name', ''), f.text) for f in xml.findall('Entities/Entity/AdditionalFields/Field')])
-            params = dict([(f.get('Name', ''), f.text) for f in xml.findall('TransformFields/Field')])
-            for k, i in params.items():
+            for k, i in msg.parameters.iteritems():
                 if '.' in k:
                     config[k.replace('.', '/', 1)] = i
                 else:
-                    config['default/%s' % k] = i
-            limits = xml.find('Limits').attrib
+                    config['plume/%s' % k] = i
 
             msg = transform(
-                MaltegoTransformRequestMessage(value, fields, params, limits),
+                msg,
                 request_str if hasattr(transform, 'cmd') and
                 callable(transform.cmd) else MaltegoTransformResponseMessage()
             ) if get_transform_version(transform) == 2 else transform(
-                MaltegoTransformRequestMessage(value, fields, params, limits),
+                msg,
                 request_str if hasattr(transform, 'cmd') and
                 callable(transform.cmd) else MaltegoTransformResponseMessage(),
                 config
@@ -267,16 +177,80 @@ class AsyncMaltegoHTTPServer(ThreadingMixIn, MaltegoHTTPServer):
 
 
 def parse_args(args):
-    args = parser.parse_args(args)
-    if args.hostname is None:
+    if not args.hostname:
         args.hostname = getfqdn()
     return args
 
 
-def run(args):
-    opts = parse_args(args)
+def monkey_patch(server):
+    imgres = canari.resource.image_resource
+    canari.resource.image_resource = lambda name, pkg=None: '%s://%s/%s' % (
+        'https' if server.is_ssl else 'http',
+        server.hostname,
+        imgres(hashlib.md5(name).hexdigest())
+    )
+    canari.resource.icon_resource = canari.resource.image_resource
+    callpkg = canari.resource.calling_package
+    canari.resource.calling_package = lambda frame=4: callpkg(frame)
 
-    fix_pypath()
+
+@SubCommand(
+    canari_main,
+    help='Runs a transform server for the given packages.',
+    description='Runs a transform server for the given packages.'
+)
+@Argument(
+    'packages',
+    metavar='<package>',
+    help='The name of the transform packages you wish to host (e.g. mypkg.transforms).',
+    nargs='+'
+)
+@Argument(
+    '--port',
+    metavar='<port>',
+    default=-1,
+    type=int,
+    help='The port the server will run on.'
+)
+@Argument(
+    '--disable-ssl',
+    action='store_true',
+    default=False,
+    help='Any extra parameters that can be sent to the local transform.'
+)
+@Argument(
+    '--enable-privileged',
+    action='store_true',
+    default=False,
+    help='DANGEROUS: permit TDS to run packages that require elevated privileges.'
+)
+@Argument(
+    '--listen-on',
+    metavar='[address]',
+    default='',
+    help='The address of the interface to listen on.'
+)
+@Argument(
+    '--cert',
+    metavar='[certificate]',
+    default='cert.pem',
+    help='The name of the certificate file used for the server in PEM format.'
+)
+@Argument(
+    '--hostname',
+    metavar='[hostname]',
+    default=None,
+    help='The hostname of this transform server.'
+)
+@Argument(
+    '--daemon',
+    default=False,
+    action='store_true',
+    help='Daemonize server (fork to background).'
+)
+def run_server(args):
+    fix_binpath(config['default/path'])
+    opts = parse_args(args)
 
     if opts.port == -1:
         opts.port = 443 if not opts.disable_ssl else 80
@@ -285,8 +259,6 @@ def run(args):
         print ('You must run this server as root to continue...')
         os.execvp('sudo', ['sudo'] + sys.argv)
 
-    fix_binpath(config['default/path'])
-
     transforms = {}
 
     print ('Loading transform packages...')
@@ -294,20 +266,11 @@ def run(args):
     try:
         for pkg_name in opts.packages:
 
-            if not pkg_name.endswith('.transforms'):
-                pkg_name = ('%s.transforms' % pkg_name)
+            t = TransformDistribution(pkg_name)
 
             print ('Loading transform package %s' % pkg_name)
-
-            transform_package = import_package(pkg_name)
-
-            for transform_name in transform_package.__all__:
-
-                transform_name = ('%s.%s' % (pkg_name, transform_name))
-                transform_module = import_transform(transform_name)
-
-                if not hasattr(transform_module, 'dotransform'):
-                    continue
+            for transform_module in t.remote_transforms:
+                transform_name = transform_module.__name__
 
                 if os.name == 'posix' and hasattr(transform_module.dotransform, 'privileged') and \
                         (os.geteuid() or not opts.enable_privileged):
@@ -318,7 +281,7 @@ def run(args):
                     inputs = []
                     if hasattr(transform_module.dotransform, 'inputs'):
                         for category, entity_type in transform_module.dotransform.inputs:
-                            inputs.append(entity_type.type)
+                            inputs.append(entity_type._type_)
                             inputs.append(entity_type._v2type_)
                     transforms['/%s' % transform_name] = (transform_module.dotransform, inputs)
 
@@ -346,6 +309,8 @@ def run(args):
     else:
         print ('Really? Over regular HTTP? What a shame...')
         httpd = AsyncMaltegoHTTPServer(server_address=server_address, transforms=transforms, hostname=opts.hostname)
+
+    monkey_patch(httpd)
 
     if not opts.daemon or not os.fork():
         try:
