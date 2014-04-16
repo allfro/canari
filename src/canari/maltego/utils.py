@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import inspect
 import signal
 import sys
@@ -46,7 +47,7 @@ def onterminate(func):
 
 def message(m, fd=sys.stdout):
     """Write a MaltegoMessage to stdout and exit successfully"""
-    print MaltegoMessage(m).render(fragment=True)
+    print MaltegoMessage(message=m).render(fragment=True)
     sys.exit(0)
 
 
@@ -139,7 +140,7 @@ def to_entity(entity_type, value, fields):
     """
     e = entity_type(value)
     for k, v in fields.iteritems():
-        e += Field(k, v)
+        e.fields[k] = Field(k, v)
     return e
 
 
@@ -213,10 +214,16 @@ def local_transform_runner(transform, value, fields, params, config, message_wri
         input_entity = to_entity(guess_entity_type(transform_module, fields), value, fields)
 
         msg = transform_module.dotransform(
-            MaltegoTransformRequestMessage(value, fields, params, input_entity),
+            MaltegoTransformRequestMessage(
+                entities=[input_entity.__entity__],
+                parameters={'canari.local.arguments': Field(name='canari.local.arguments', value=params)}
+            ),
             MaltegoTransformResponseMessage()
         ) if get_transform_version(transform_module.dotransform) == 2 else transform_module.dotransform(
-            MaltegoTransformRequestMessage(value, fields, params, input_entity),
+            MaltegoTransformRequestMessage(
+                entities=[input_entity.__entity__],
+                parameters={'canari.local.arguments': Field(name='canari.local.arguments', value=params)}
+            ),
             MaltegoTransformResponseMessage(),
             config
         )
@@ -238,12 +245,15 @@ def local_transform_runner(transform, value, fields, params, config, message_wri
         if transform_module:
             transform_module.onterminate()
 
+
 def debug(*args):
     """Send debug messages to the Maltego console."""
     for i in args:
         sys.stderr.write('D:%s\n' % str(i))
+        sys.stderr.flush()
 
 
 def progress(i):
     """Send a progress report to the Maltego console."""
     sys.stderr.write('%%%d\n' % min(max(i, 0), 100))
+    sys.stderr.flush()
