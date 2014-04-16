@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 
 from canari.xmltools.oxml import MaltegoElement, fields as fields_
 
@@ -48,7 +48,6 @@ __all__ = [
 
 
 class MaltegoException(MaltegoElement, Exception):
-
     class meta:
         tagname = 'Exception'
 
@@ -59,7 +58,6 @@ class MaltegoException(MaltegoElement, Exception):
 
 
 class MaltegoTransformExceptionMessage(MaltegoElement):
-
     exceptions = fields_.List(MaltegoException, tagname='Exceptions')
 
     def appendelement(self, exception):
@@ -70,13 +68,11 @@ class MaltegoTransformExceptionMessage(MaltegoElement):
 
 
 class Limits(MaltegoElement):
-
     soft = fields_.Integer(attrname='SoftLimit', default=500)
     hard = fields_.Integer(attrname='HardLimit', default=10000)
 
 
 class Label(MaltegoElement):
-
     def __init__(self, name=None, value=None, **kwargs):
         super(Label, self).__init__(name=name, value=value, **kwargs)
 
@@ -91,7 +87,6 @@ class MatchingRule(object):
 
 
 class Field(MaltegoElement):
-
     def __init__(self, name=None, value=None, **kwargs):
         super(Field, self).__init__(name=name, value=value, **kwargs)
 
@@ -102,7 +97,6 @@ class Field(MaltegoElement):
 
 
 class _Entity(MaltegoElement):
-
     class meta:
         tagname = 'Entity'
 
@@ -134,7 +128,6 @@ class UIMessageType:
 
 
 class UIMessage(MaltegoElement):
-
     def __init__(self, value=None, **kwargs):
         super(UIMessage, self).__init__(value=value, **kwargs)
 
@@ -143,7 +136,6 @@ class UIMessage(MaltegoElement):
 
 
 class MaltegoTransformResponseMessage(MaltegoElement):
-
     uimessages = fields_.List(UIMessage, tagname='UIMessages')
     entities = fields_.List(_Entity, tagname='Entities')
 
@@ -165,7 +157,6 @@ class MaltegoTransformResponseMessage(MaltegoElement):
 
 
 class StringEntityField(object):
-
     def __init__(self, name, displayname=None, decorator=None, matchingrule=MatchingRule.Strict, is_value=False,
                  **extras):
         self.decorator = decorator
@@ -201,7 +192,6 @@ class StringEntityField(object):
 
 
 class EnumEntityField(StringEntityField):
-
     def __init__(self, name, displayname=None, choices=None, decorator=None, matchingrule=MatchingRule.Strict,
                  is_value=False, **extras):
         self.choices = [str(c) if not isinstance(c, basestring) else c for c in choices or []]
@@ -215,7 +205,6 @@ class EnumEntityField(StringEntityField):
 
 
 class IntegerEntityField(StringEntityField):
-
     def __get__(self, obj, objtype):
         i = super(IntegerEntityField, self).__get__(obj, objtype)
         return int(i) if i is not None else None
@@ -227,7 +216,6 @@ class IntegerEntityField(StringEntityField):
 
 
 class BooleanEntityField(StringEntityField):
-
     def __get__(self, obj, objtype):
         b = super(BooleanEntityField, self).__get__(obj, objtype)
         return b.startswith('t') or b == '1' if b is not None else None
@@ -239,7 +227,6 @@ class BooleanEntityField(StringEntityField):
 
 
 class FloatEntityField(StringEntityField):
-
     def __get__(self, obj, objtype):
         f = super(FloatEntityField, self).__get__(obj, objtype)
         return float(f) if f is not None else None
@@ -251,7 +238,6 @@ class FloatEntityField(StringEntityField):
 
 
 class LongEntityField(StringEntityField):
-
     def __get__(self, obj, objtype):
         l = super(LongEntityField, self).__get__(obj, objtype)
         return long(l) if l is not None else None
@@ -263,7 +249,6 @@ class LongEntityField(StringEntityField):
 
 
 class DateTimeEntityField(StringEntityField):
-
     def __get__(self, obj, objtype):
         d = super(DateTimeEntityField, self).__get__(obj, objtype)
         return datetime.strptime(d, '%Y-%m-%d %H:%M:%S.%f') if d is not None else None
@@ -275,7 +260,6 @@ class DateTimeEntityField(StringEntityField):
 
 
 class DateEntityField(StringEntityField):
-
     def __get__(self, obj, objtype):
         d = super(DateEntityField, self).__get__(obj, objtype)
         return datetime.strptime(d, '%Y-%m-%d').date() if d is not None else None
@@ -308,7 +292,6 @@ class timespan(timedelta):
 
 
 class TimeSpanEntityField(StringEntityField):
-
     def __get__(self, obj, objtype):
         d = super(TimeSpanEntityField, self).__get__(obj, objtype)
         return timespan.fromstring(d) if d is not None else None
@@ -322,7 +305,6 @@ class TimeSpanEntityField(StringEntityField):
 
 
 class RegexEntityField(StringEntityField):
-
     def __init__(self, name, displayname=None, pattern='.*', decorator=None, matchingrule=MatchingRule.Strict,
                  is_value=False, **extras):
         super(RegexEntityField, self).__init__(name, displayname, decorator, matchingrule, is_value, **extras)
@@ -339,7 +321,6 @@ class RegexEntityField(StringEntityField):
 
 
 class ColorEntityField(RegexEntityField):
-
     def __init__(self, name, displayname=None, decorator=None, matchingrule=MatchingRule.Strict, is_value=False,
                  **extras):
         super(ColorEntityField, self).__init__(name, displayname, '^#[0-9a-fA-F]{6}$', decorator, matchingrule,
@@ -360,7 +341,6 @@ class EntityFieldType:
 
 
 class EntityField(object):
-
     def __init__(self, link=False, **kwargs):
         self.name = kwargs.pop('name')
         if self.name is None:
@@ -395,14 +375,12 @@ class EntityField(object):
 
 
 class EntityLinkField(EntityField):
-
     def __init__(self, **kwargs):
         kwargs['name'] = 'link#%s' % kwargs.get('name')
         super(EntityLinkField, self).__init__(link=True, **kwargs)
 
 
 class MetaEntityClass(type):
-
     registry = {}
 
     def __new__(cls, clsname, bases, attrs):
@@ -483,7 +461,7 @@ class Entity(object):
             else:
                 propname = self._fields_to_properties_[other.name]
                 setattr(self, propname, other.value)
-            # setattr(self, propname, other.value)
+                # setattr(self, propname, other.value)
         elif isinstance(other, Label):
             self.labels[other.name] = other
 
@@ -558,28 +536,43 @@ class Entity(object):
     def __getattr__(self, item):
         return getattr(self._entity, item)
 
+    def __setattr__(self, key, value):
+        if key in ['value', 'iconurl', 'weight', 'type']:
+            setattr(self._entity, key, value)
+        return object.__setattr__(self, key, value)
+
 
 class MaltegoTransformRequestMessage(MaltegoElement):
+    entities = fields_.List(_Entity, tagname='Entities', required=False)
+    parameters = fields_.Dict(Field, tagname='TransformFields', key='name', required=False)
+    limits = fields_.Model(Limits, required=False)
 
-    entities = fields_.List(_Entity, tagname='Entities')
-    parameters = fields_.Dict(Field, tagname='TransformFields', key='name')
-    limits = fields_.Model(Limits)
+    def __init__(self, **kwargs):
+        super(MaltegoTransformRequestMessage, self).__init__(**kwargs)
+        self._canari_fields = dict([(f.name, f.value) for f in self.entity.fields.values()])
 
     @property
     def entity(self):
-        return MetaEntityClass.to_entity_type(self.entities[0].type)(self.entities[0])
+        if self.entities:
+            return MetaEntityClass.to_entity_type(self.entities[0].type)(self.entities[0])
+        return Entity('')
 
     @property
     def params(self):
-        return self.parameters.get('canari.local.arguments', self.parameters)
+        if 'canari.local.arguments' in self.parameters:
+            return self.parameters['canari.local.arguments'].value
+        return self.parameters
 
     @property
     def value(self):
         return self.entity.value
 
+    @property
+    def fields(self):
+        return self._canari_fields
+
 
 class MaltegoMessage(MaltegoElement):
-
     message = fields_.Choice(
         fields_.Model(MaltegoTransformExceptionMessage),
         fields_.Model(MaltegoTransformResponseMessage),
