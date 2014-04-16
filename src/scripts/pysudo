@@ -25,7 +25,7 @@ def main():
         exit(-1)
 
     # Let's try and run it right away and see what happens
-    p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:], stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:], stdin=subprocess.PIPE)
     p.communicate()
 
     # It ran!
@@ -36,7 +36,7 @@ def main():
     l = fmutex('pysudo.%s.lock' % getpass.getuser())
 
     # Try running it again (maybe another process authenticated... why ask for a password again?)
-    p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:], stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(['sudo', '-S'] + sys.argv[1:], stdin=subprocess.PIPE)
     p.communicate()
 
     if not p.returncode:
@@ -50,7 +50,7 @@ def main():
             exit(1)
 
         # Try it out with a password now!
-        p = subprocess.Popen(['sudo', '-S', 'true'], stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(['sudo', '-S', 'true'], stdin=subprocess.PIPE)
         p.communicate(input='%s\n' % password)
 
         # Did it work? Yes: let's do it!
