@@ -435,7 +435,7 @@ class MaltegoDistribution(object):
             os.unlink(filename)
 
     def __del__(self):
-        if self.version >= MaltegoVersion.Tungsten:
+        if not hasattr('version', self) or self.version >= MaltegoVersion.Tungsten:
             return
         self._write_pending()
 
