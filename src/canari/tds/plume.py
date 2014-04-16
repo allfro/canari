@@ -2,6 +2,7 @@
 
 # Builtin imports
 from ConfigParser import NoSectionError
+import traceback
 from urlparse import urljoin
 import hashlib
 import sys
@@ -17,8 +18,15 @@ import canari.config as _config
 from canari.maltego.utils import get_transform_version
 from canari.maltego.message import (MaltegoMessage, MaltegoTransformResponseMessage, MaltegoTransformExceptionMessage,
                                     MaltegoException)
-from canari.resource import image_resources
 
+# Monkey patch our resource lib to automatically rewrite icon urls
+import canari.resource
+imgres = canari.resource.image_resource
+canari.resource.image_resource = \
+    lambda name, pkg=None: '%sstatic/%s' % (request.host_url, hashlib.md5(imgres(name, pkg)).hexdigest())
+canari.resource.icon_resource = canari.resource.image_resource
+callpkg = canari.resource.calling_package
+canari.resource.calling_package = lambda frame=4: callpkg(frame)
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
@@ -33,17 +41,22 @@ __status__ = 'Development'
 
 class Canari(Flask):
 
+    four_o_four = 'Whaaaaat?'
+
     def __init__(self, import_name):
         super(Canari, self).__init__(import_name)
         self.transforms = {}
+        self.resources = []
         self._initialize()
 
     def _copy_images(self, pkg):
         if pkg.endswith('.transforms'):
             pkg = pkg.replace('.transforms', '')
-        for i in image_resources(pkg):
+        for i in canari.resource.image_resources(pkg):
             dname = 'static/%s' % hashlib.md5(i).hexdigest()
+            self.resources.append(dname)
             if not os.path.exists(dname):
+                print 'Copying %s to %s...' % (i, dname)
                 with open(i, mode='rb') as src:
                     with open(dname, mode="wb") as dst:
                         dst.write(src.read())
@@ -134,16 +147,7 @@ def message(m):
             m.replace(url, new_url, 1)
         v = m
     else:
-        # Let's make sure that we're not spewing out local file system information ;)
-        for e in m.entities:
-            if e.iconurl is not None:
-                e.iconurl = e.iconurl.strip()
-                if e.iconurl.startswith('file://'):
-                    path = 'static/%s' % hashlib.md5(e.iconurl[7:]).hexdigest()
-                    new_url = urljoin(request.host_url, path)
-                    e.iconurl = new_url
         v = MaltegoMessage(message=m).render()
-    # Get rid of those nasty unicode 32 characters
     return Response(v, status=200, mimetype='text/html')
 
 
@@ -160,7 +164,7 @@ def dotransform(transform, valid_input_entity_types):
         entity_type = e.type
 
         if valid_input_entity_types and entity_type not in valid_input_entity_types:
-            return Response(status=404)
+            return Response(app.four_o_four, status=404)
 
         # Initialize a private copy of the config to pass into the transform
         config = _config.CanariConfigParser()
@@ -189,22 +193,29 @@ def dotransform(transform, valid_input_entity_types):
     except MaltegoException, me:
         return croak(str(me))
     except Exception, e:
-        return croak(str(e))
+        return croak(traceback.format_exc())
 
 
 # This is where the TDS will ask: "Are you a transform?" and we say "200 - Yes I am!" or "404 - PFO"
 @app.route('/<transform_name>', methods=['GET'])
 def transform_checker(transform_name):
-    if transform_name not in app.transforms:
-        return Response(status=404)
-    return Response(status=200)
+    if transform_name in app.transforms:
+        return Response('Yes?', status=200)
+    return Response(app.four_o_four, status=404)
+
+@app.route('/static/<resource_name>', methods=['GET'])
+def static_fetcher(resource_name):
+    resource_name = 'static/%s' % resource_name
+    if resource_name in app.resources:
+        return Response(file(resource_name, mode='rb').read(), status=200, mimetype='application/octet-stream')
+    return Response(app.four_o_four, status=404)
 
 
 # This is where we process a transform request.
 @app.route('/<transform_name>', methods=['POST'])
 def transform_runner(transform_name):
     if transform_name not in app.transforms:
-        return Response(status=400)
+        return Response(app.four_o_four, status=404)
     return dotransform(*app.transforms[transform_name])
 
 
