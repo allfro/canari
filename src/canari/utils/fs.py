@@ -132,7 +132,10 @@ class fmutex(fsemaphore):
 
 def ufile(name, delete=False):
     n, e = os.path.splitext(name)
-    return NamedTemporaryFile(suffix=e, prefix='%s_' % n, delete=delete)
+    f = NamedTemporaryFile(suffix=e, prefix='%s_' % n, delete=delete)
+    if os.name == 'posix':
+        os.chmod(f.name, 0644)
+    return f
 
 
 def age(path):
