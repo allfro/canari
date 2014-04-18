@@ -58,7 +58,7 @@ def create_transform(args):
         exit(-1)
 
     directory = opts.transform_dir
-    transformf = os.path.join(directory, opts.transform if opts.transform.endswith('.py') else '%s.py' % opts.transform )
+    transformf = os.path.join(directory, opts.transform if opts.transform.endswith('.py') else '%s.py' % opts.transform)
 
     if not os.path.exists(initf):
         print ('Directory %s does not appear to be a python package directory... quitting!' % repr(opts.transform_dir))
