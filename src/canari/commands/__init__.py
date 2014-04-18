@@ -19,6 +19,7 @@ __all__ = [
     'csv2sheets',
     'debug_transform',
     'delete_transform',
+    'duplicate_transform',
     'framework',
     'generate_entities',
     'help',
