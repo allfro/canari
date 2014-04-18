@@ -25,6 +25,7 @@ __all__ = [
     'help',
     'install_package',
     'install_plume',
+    'list_transforms',
     'list_commands',
     'load_plume_package',
     'mtgx2csv',
