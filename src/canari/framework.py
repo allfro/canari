@@ -19,8 +19,10 @@ __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
 
 __all__ = [
-    'privileged',
-    'specification'
+    'superuser',
+    'deprecated',
+    'configure',
+    'ExternalCommand'
 ]
 
 
