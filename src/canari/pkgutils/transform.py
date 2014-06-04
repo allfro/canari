@@ -29,8 +29,13 @@ __all__ = [
 class TransformDistribution(object):
 
     def __init__(self, package_name):
-        self._package_name = package_name.replace('.transforms', '') \
-            if package_name.endswith('.transforms') else package_name
+        try:
+            self._package_name = package_name.replace('.transforms', '') \
+                                 if package_name.endswith('.transforms') else package_name
+        except AttributeError:
+            # Correct way of handling python duck typing. Above will work for
+            # both str and unicode strings.
+            raise TypeError("'package_name' should be a string.")
 
         print('Looking for transforms in %s.transforms...' % self.name)
         try:
