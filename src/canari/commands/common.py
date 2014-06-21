@@ -180,16 +180,15 @@ def project_tree():
 
     tree = dict(
         root=root,
-        src=None,
+        # src is always directly under root
+        src=os.path.join(root, 'src'),
         pkg=None,
         resources=None,
         transforms=None
     )
 
-    for base, dirs, files in os.walk(root):
-        if base.endswith('src'):
-            tree['src'] = base
-        elif 'resources' in dirs:
+    for base, dirs, files in os.walk(tree['src']):
+        if 'resources' in dirs:
             tree['pkg'] = base
         elif base.endswith('resources'):
             tree['resources'] = base
