@@ -52,7 +52,7 @@ class MaltegoException(MaltegoElement, Exception):
         tagname = 'Exception'
 
     def __init__(self, value):
-        super(MaltegoElement, self).__init__(value=value)
+        super(MaltegoException, self).__init__(value=value),
 
     value = fields_.String(tagname='.')
 
@@ -109,15 +109,15 @@ class _Entity(MaltegoElement):
 
     def appendelement(self, other):
         if isinstance(other, Field):
-            self.fields.append(other)
+            self.fields[other.name] = other
         elif isinstance(other, Label):
-            self.labels.append(other)
+            self.labels[other.name] = other
 
     def removeelement(self, other):
         if isinstance(other, Field):
-            self.fields.remove(other)
+            self.fields.pop(other.name)
         elif isinstance(other, Label):
-            self.labels.remove(other)
+            self.labels.pop(other.name)
 
 
 class UIMessageType:
