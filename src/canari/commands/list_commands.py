@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from common import canari_main
-from canari.maltego.utils import highlight
+from canari.utils.console import highlight
 from framework import SubCommand
 
 __author__ = 'Nadeem Douba'
