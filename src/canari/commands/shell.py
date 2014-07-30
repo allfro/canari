@@ -9,7 +9,8 @@ from canari.pkgutils.transform import TransformDistribution
 from common import canari_main, fix_pypath, fix_binpath, import_package, pushd
 from framework import SubCommand, Argument
 from canari.config import config
-from canari.maltego.utils import highlight, console_message, local_transform_runner
+from canari.maltego.utils import console_message, local_transform_runner
+from canari.utils.console import highlight
 import canari
 
 
