@@ -11,6 +11,7 @@ from safedexml import Model
 
 from canari.commands.common import sudo, import_transform
 from canari.maltego.entities import Unknown
+from canari.utils.console import highlight
 from message import MaltegoMessage, MaltegoTransformExceptionMessage, MaltegoException, \
     MaltegoTransformResponseMessage, MaltegoTransformRequestMessage, UIMessage, Field
 
@@ -27,7 +28,6 @@ __status__ = 'Development'
 __all__ = [
     'onterminate',
     'message',
-    'highlight',
     'console_message',
     'croak',
     'guess_entity_type',
@@ -49,28 +49,6 @@ def message(m, fd=sys.stdout):
     """Write a MaltegoMessage to stdout and exit successfully"""
     print MaltegoMessage(message=m).render(fragment=True)
     sys.exit(0)
-
-
-def highlight(s, color, bold):
-    """
-    Internal API: Returns the colorized version of the text to be returned to a POSIX terminal. Not compatible with
-    Windows (yet).
-    """
-    if os.name == 'posix':
-        attr = []
-        if color == 'green':
-            # green
-            attr.append('32')
-        elif color == 'red':
-            # red
-            attr.append('31')
-        else:
-            attr.append('30')
-        if bold:
-            attr.append('1')
-        s = '\x1b[%sm%s\x1b[0m' % (';'.join(attr), s)
-
-    return s
 
 
 def console_message(msg, tab=-1):

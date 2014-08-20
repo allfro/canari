@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os
-from canari.maltego.utils import highlight
+from canari.utils.console import highlight
 from canari.pkgutils.transform import TransformDistribution
 
 from common import (canari_main, uproot, pushd)
