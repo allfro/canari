@@ -2,6 +2,8 @@
 
 from distutils.command.install import install
 from distutils.dist import Distribution
+from setuptools import find_packages
+from pkgutil import iter_modules
 from argparse import Action
 from datetime import datetime
 from string import Template
@@ -15,7 +17,7 @@ from pkg_resources import resource_filename
 
 from canari.commands.framework import Command
 from canari.config import CanariConfigParser
-
+from canari.utils.console import highlight
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
@@ -175,26 +177,112 @@ def project_root():
     raise ValueError('Unable to determine project root.')
 
 
-def project_tree():
-    root = project_root()
+def project_tree(package=None):
+    """Returns a dict of the project tree.
 
+    Will try and look for local/source packages first, and if it fails to find
+    a valid project root, it will look for system installed packages instead.
+
+    Returns a dictionary with the following fields:
+    - root: Path of the canari root folder or None if not applicable.
+    - src: Path of the folder containing the package.
+    - pkg: Path of the actual package.
+    - pkg_name: Name of the package, which details are returned about.
+    - resources: Path of the resources folder inside the package.
+    - transforms: Path of the transforms folder inside the package.
+    """
+
+    # Default values for the returned fields.
     tree = dict(
-        root=root,
-        # src is always directly under root
-        src=os.path.join(root, 'src'),
+        root=None,
+        src=None,
         pkg=None,
+        pkg_name=None,
         resources=None,
-        transforms=None
+        transforms=None,
     )
 
-    for base, dirs, files in os.walk(tree['src']):
-        if 'resources' in dirs:
-            tree['pkg'] = base
-        elif base.endswith('resources'):
-            tree['resources'] = base
-        elif base.endswith('transforms'):
-            tree['transforms'] = base
 
+    try:
+        root = project_root()
+
+        # TODO: The 'src' folder is currently harcoded inside setup.py. People
+        # may change this and thus we should probably read this value from
+        # '.canari', so the user may change this freely.
+
+        # Using find_packages we don't risk having to deal with the *.egg-info
+        # folder and trying to make a best guess at what folder is a actual
+        # source code, tests, or something else.
+        packages = filter(lambda pkg: pkg.find('.') < 0, find_packages('src'))
+        if package is None and len(packages) == 1:
+            # No package was specified by the user and there is only one
+            # possibility, so silently choose that one.
+            package = packages[0]
+        elif package not in packages:
+            # The supplied package was not found or not specified (None).  List
+            # the found packages and make the user choose the correct one.
+            if package is not None:
+                print "{warning} You specified a specific transform package, but " \
+                    "it does {_not_} exist inside this canari source directory. " \
+                    "\nPerhaps you ment to refer to an already installed package?\n" \
+                        .format(warning = highlight('[warning]', 'red', False),
+                                _not_= highlight('not', None, True))
+
+            print "The possible transform packages inside this canari root directory are:"
+            print 'Root dir: %s' % root
+            n = parse_int('Choose a package', packages, default=0)
+            package = packages[n]
+
+        #else: the user supplied package name is already a valid one, and the
+        #one the user picked.. so all is good.
+        assert package is not None, 'Fatal error: No package has been found or choosen!'
+
+        # Update the tree dict with all relevant information for this source package
+        tree['root'] = root
+        # Again 'src' is hardcooded in setup.py
+        tree['src'] = os.path.join(tree['root'], 'src')
+        tree['pkg'] = os.path.join(tree['src'], package)
+    except ValueError as ve:
+        # If we can't locate the project root, then we are not within a (source)
+        # canari project folder and thus we will try and look for installed
+        # packages instead.
+        for module_importer, name, ispkg in iter_modules():
+            # module_importer is most likely a pkgutils.ImpImporter instance (or
+            # the like) that has been initialised with a path that matches the
+            # (egg) install directory of the current module being iterated.
+            # Thus any calls to functions (e.g., find_module) on this instance
+            # will be limited to that path (i.e., you can't load arbitrary
+            # packages from it).
+            if name == package:
+                # Installed packages, don't have a (canari) 'root' folder.
+                # However it seems that (atleast) installed eggs have a form of
+                # 'src' folder named #pkg_name#-#pkg_version#-#py_version#.egg.
+                # This folder (generally) contains two folders: #pkg_name# and
+                # EGG-INFO
+                tree['src'] = module_importer.path
+                tree['pkg'] = module_importer.find_module(package).filename
+
+                break # No need to keep searching.
+
+        if tree['src'] is None:
+            # We didn't find the user supplied package name in the list of
+            # installed packages.
+            raise ValueError("You are not inside a canari root directory ('%s'), "
+                             "and it was not possible to locate " "the given package "
+                             "'%s' among the list of installed packages."
+                             % (os.getcwd(), package))
+
+
+    tree['pkg_name'] = package
+    # A transform packages structure is expected to have a 'pkg_name.resources'
+    # and 'pkg_name.transforms', thus we won't dynamically look for these as
+    # everything else will break, if they can't be imported as such.
+
+    # TODO: Here be dragons. Does python3 module madness break this assumption
+    # with its new fancy features of ways to have modules not nessesarily
+    # stricly tied to the file system?
+    tree['resources'] = os.path.join(tree['pkg'], 'resources')
+    tree['transforms'] = os.path.join(tree['pkg'], 'transforms')
     return tree
 
 
