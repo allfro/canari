@@ -20,6 +20,13 @@ __all__ = [
 
 class MaltegoElement(Model):
 
+    class meta:
+        # Fix stupid defaults in safedexml. We are dealing with ordinarry XML so
+        # threat it that way
+        case_sensitive = False
+        order_sensitive = False
+
+
     def __add__(self, other):
         return self.__iadd__(other)
 
