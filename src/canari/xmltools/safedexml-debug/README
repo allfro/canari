@@ -1,0 +1,14 @@
+Copy this folder into path and rename it to safedexml or if you have installed
+safedexml from pip, overwrite the dist-packages path
+/usr/local/lib/python2.7/dist-packages/safedexml/ with the content.
+
+This will generate some debug output.
+
+It is advised to only copy one of the files at a time (e.g., only __init__.py or
+only fields.py) as their output will mingle and it will be near to impossible to
+tell them apart.  Yest the output is wery simple and could probably have been
+made smarter...
+
+Currently the output of __init__.py is the 'best', in the sense that it tries to
+nest the output and indent it so, it is easier to follow function calls, and the
+'parsing logic' within the parse() function.
