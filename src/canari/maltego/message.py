@@ -549,7 +549,6 @@ class MaltegoTransformRequestMessage(MaltegoElement):
 
     def __init__(self, **kwargs):
         super(MaltegoTransformRequestMessage, self).__init__(**kwargs)
-        self._canari_fields = dict([(f.name, f.value) for f in self.entity.fields.values()])
 
     @property
     def entity(self):
