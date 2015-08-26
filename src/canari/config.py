@@ -27,7 +27,7 @@ __all__ = [
 
 class CanariConfigParser(SafeConfigParser):
     def _interpolate_environment_variables(self, value):
-        if isinstance(value, str):
+        if isinstance(value, basestring):
             evs = self._get_env_vars(value)
             if evs:
                 for ev in evs:
@@ -36,7 +36,7 @@ class CanariConfigParser(SafeConfigParser):
         return value
 
     def _interpolate(self, section, option, value, d):
-        if isinstance(value, str):
+        if isinstance(value, basestring):
             value = self._interpolate_environment_variables(value)
         elif isinstance(value, dict):
             for i in value:
