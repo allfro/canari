@@ -71,7 +71,9 @@ def get_bin_dir():
     """
     Returns the absolute path of the installation directory for the Canari scripts.
     """
-    d = install(Distribution())
+    # re-import so we pass an isinstance check for Distribution
+    from distutils.dist import Distribution as MyDistribution
+    d = install(MyDistribution())
     d.finalize_options()
     return d.install_scripts
 
