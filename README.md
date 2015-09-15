@@ -1,3 +1,6 @@
+<a href='https://pledgie.com/campaigns/30181'><img alt='Click here to lend your support to: Help the Canari Framework get to Version 3.0 and make a donation at pledgie.com !' src='https://pledgie.com/campaigns/30181.png?skin_name=chrome' border='0' ></a>
+
+
 Canari - Maltego Rapid Transform Development Framework
 ======================================================
 
