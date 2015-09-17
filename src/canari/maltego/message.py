@@ -6,6 +6,8 @@ from datetime import datetime, date, timedelta
 from numbers import Number
 import re
 
+from xml.sax.saxutils import escape
+
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, Canari Project'
@@ -46,6 +48,14 @@ __all__ = [
     'Entity',
 ]
 
+class MaltegoString(fields_.String):
+    def _esc_render_value(self, val):
+        esc = escape(self.render_value(val))
+        if isinstance(val, unicode):
+            return esc.encode('ascii', 'xmlcharrefreplace')
+        else:
+            return esc
+
 
 class MaltegoException(MaltegoElement, Exception):
     class meta:
@@ -54,7 +64,7 @@ class MaltegoException(MaltegoElement, Exception):
     def __init__(self, value):
         super(MaltegoException, self).__init__(value=value),
 
-    value = fields_.String(tagname='.')
+    value = MaltegoString(tagname='.')
 
 
 class MaltegoTransformExceptionMessage(MaltegoElement):
@@ -77,8 +87,8 @@ class Label(MaltegoElement):
         super(Label, self).__init__(name=name, value=value, **kwargs)
 
     value = fields_.CDATA(tagname='.')
-    type = fields_.String(attrname='Type', default='text/text')
-    name = fields_.String(attrname='Name')
+    type = MaltegoString(attrname='Type', default='text/text')
+    name = MaltegoString(attrname='Name')
 
 
 class MatchingRule(object):
@@ -90,22 +100,22 @@ class Field(MaltegoElement):
     def __init__(self, name=None, value=None, **kwargs):
         super(Field, self).__init__(name=name, value=value, **kwargs)
 
-    name = fields_.String(attrname='Name')
-    displayname = fields_.String(attrname='DisplayName', required=False)
-    matchingrule = fields_.String(attrname='MatchingRule', default=MatchingRule.Strict, required=False)
-    value = fields_.String(tagname='.')
+    name = MaltegoString(attrname='Name')
+    displayname = MaltegoString(attrname='DisplayName', required=False)
+    matchingrule = MaltegoString(attrname='MatchingRule', default=MatchingRule.Strict, required=False)
+    value = MaltegoString(tagname='.')
 
 
 class _Entity(MaltegoElement):
     class meta:
         tagname = 'Entity'
 
-    type = fields_.String(attrname='Type')
+    type = MaltegoString(attrname='Type')
     fields = fields_.Dict(Field, key='name', tagname='AdditionalFields', required=False)
     labels = fields_.Dict(Label, key='name', tagname='DisplayInformation', required=False)
-    value = fields_.String(tagname='Value')
+    value = MaltegoString(tagname='Value')
     weight = fields_.Integer(tagname='Weight', default=1)
-    iconurl = fields_.String(tagname='IconURL', required=False)
+    iconurl = MaltegoString(tagname='IconURL', required=False)
 
     def appendelement(self, other):
         if isinstance(other, Field):
@@ -131,8 +141,8 @@ class UIMessage(MaltegoElement):
     def __init__(self, value=None, **kwargs):
         super(UIMessage, self).__init__(value=value, **kwargs)
 
-    type = fields_.String(attrname='MessageType', default=UIMessageType.Inform)
-    value = fields_.String(tagname='.')
+    type = MaltegoString(attrname='MessageType', default=UIMessageType.Inform)
+    value = MaltegoString(tagname='.')
 
 
 class MaltegoTransformResponseMessage(MaltegoElement):

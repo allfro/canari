@@ -48,7 +48,9 @@ def message(m, response):
             m.replace(url, new_url, 1)
         v = m
     else:
-        v = MaltegoMessage(m).render(fragment=True)
+        mm = MaltegoMessage()
+        mm.message = m
+        v = mm.render(fragment=True)
         # Get rid of those nasty unicode 32 characters
     response.wfile.write(v)
 
@@ -80,7 +82,7 @@ class MaltegoTransformRequestHandler(BaseHTTPRequestHandler):
                 return
             request_str = self.rfile.read(int(self.headers['Content-Length']))
 
-            msg = MaltegoTransformRequestMessage.parse(request_str).message
+            msg = MaltegoMessage.parse(request_str).message
 
             e = msg.entity
             entity_type = e.type

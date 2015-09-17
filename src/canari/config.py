@@ -95,7 +95,7 @@ class CanariConfigParser(SafeConfigParser):
         section, option = key.split('/', 1)
         if not self.has_section(section):
             self.add_section(section)
-        self.set(section, option, value)
+        self.set(section, option, value.value)
 
 
 config = CanariConfigParser()
