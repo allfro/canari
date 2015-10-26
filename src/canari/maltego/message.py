@@ -51,10 +51,11 @@ class MaltegoException(MaltegoElement, Exception):
     class meta:
         tagname = 'Exception'
 
-    def __init__(self, value):
-        super(MaltegoException, self).__init__(value=value),
+    def __init__(self, value, code=None):
+        super(MaltegoException, self).__init__(value=value, code=code),
 
     value = fields_.String(tagname='.')
+    code = fields_.String(required=False)
 
 
 class MaltegoTransformExceptionMessage(MaltegoElement):
