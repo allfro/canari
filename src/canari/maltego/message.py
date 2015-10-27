@@ -544,7 +544,7 @@ class Entity(object):
 
 
 class MaltegoTransformRequestMessage(MaltegoElement):
-    entities = fields_.List(_Entity, tagname='Entities', required=False)
+    entities = fields_.List(_Entity, tagname='Entities')
     parameters = fields_.Dict(Field, tagname='TransformFields', key='name', required=False)
     limits = fields_.Model(Limits, required=False)
 
