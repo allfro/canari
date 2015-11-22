@@ -427,6 +427,56 @@ fan of a visual example, try the following example transform out to see what the
 The example transform runs on ``Phrase`` entities and determines its matching rule based on the ``Phrase`` entity's
 value. If it is anything other than ``loose``, the entity field ``internal`` will be ``strict``'ly matched.
 
+Dynamic Fields
+--------------
+
+Let's assume you have created a transform that returns an IP address retrieved from a remote database query. Alongside the IPv4Address entity you have returned in your response object, you may wish to represent further details. For this example lets use a simple NetFlow database query as an example.
+
+Imagine that a database exists holding netflow data, it contains simple key:value pairs such as ``srcaddr:1.2.3.4, dstaddr:4.3.2.1, doctets:1200, dstport:80``, say you want to examine this data with Maltego. By placing an IPv4Address entity into the maltego workspace, you could run a transform on that IP to query our database for all destination addresses, ports and octets transferred associated to a given source IP - our ``request.value``. Returning the destination IP address as a new IPv4Address entity is simple enough, but what about the additional fields?
+
+Here is some example code which will add an additional ``dynamic`` field to an IPv4Address entity:
+
+.. code-block:: python
+
+    #!/usr/bin/env python
+
+    from canari.maltego.entities import IPv4Address
+    from canari.maltego.message import Field #Field is the important import here, you need this for it to work
+    from canari.framework import configure
+
+    # ...
+    #@superuser
+    @configure(
+        label='Return the inputted IPv4Address entity with added Dynamic Fields',
+        description='Just a dummy transform to show dynamic fields',
+        uuids=[ 'blah.v2.IPv4Addresswithdynamicfields' ],
+        inputs=[ ( 'blah', IPv4Address ) ],
+        debug=True
+    )
+    def dotransform(request, response):
+        
+        # Create MyPackageEntity entity with value set to 'Hello <request.value>!'
+        e = IPv4Address('%s' % request.value)
+
+        # Here we add a dynamic field to the returned entity. Also note you can specify the matching rule as above
+        e += Field('dstport', '80', displayname='Dummy destination port dynamic field', matchingrule='loose')
+
+        # Add entity to response object
+        response += e
+
+        # Return response for visualization
+        return response
+
+
+    def onterminate():
+        debug('Caught signal... exiting.')
+        exit(0)
+
+You can add further dynamic fields to represent all the information you need. You can also add labels to the links between entities, at the time of the transform...
+
+Link Labels
+----------
+
 Entity Field Decorators
 -----------------------
 
